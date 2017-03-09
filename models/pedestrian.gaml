@@ -1,8 +1,7 @@
 /**
-* Name: socialForceModel
-* Author: laurent
+* Name: pedestrian
+* Author: Julien Philippe
 * Description:  Implementation of Helbing social force model
-* Tags: Tag1, Tag2, TagN
 */
 
 model socialForceModel
@@ -63,7 +62,7 @@ species people skills:[moving] {
 	float Ai <- 2.0;
 	
 	//Seuil de réactivité
-	float Bi <- 2.0;
+	float Bi <- 1.5;
 	
 	//Sensibilité du champs de vision [0,1] => 0 -> 0° et 1 -> 360°
 	float lambda <- 0.25;
@@ -78,15 +77,75 @@ species people skills:[moving] {
 	
 	point actual_velocity <- {0.0, 0,0};
 	
+	point social_repulsion_force_function {
+		//Force de repulser des piétons
+		point social_repulsion_force <- {0.0,0.0};
+		
+		ask people
+		{
+			if(self != myself) {
+				point distance <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
+				float dij <- sqrt(distance.x * distance.x + distance.y * distance.y);
+				float rij <- myself.size/2.0 + self.size/2.0;
+				
+				
+				point nij <- {
+					(myself.location.x - self.location.x)/dij,
+					(myself.location.y - self.location.y)/dij
+				};
+				
+				
+				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
+				
+				social_repulsion_force <- {
+					social_repulsion_force.x + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.x * ( lambda + (1-lambda) * (1+phiij)/2)),
+					social_repulsion_force.y + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.y * ( lambda + (1-lambda) * (1+phiij)/2))
+				};
+			}
+		}
+		
+		return social_repulsion_force;
+	}
+	
+	point wall_repulsion_force_function {
+		point wall_repulsion_force <- {0.0,0.0};
+		
+		ask wall
+		{
+			if(self != myself) {
+				point distance <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
+				float dij <- sqrt(distance.x * distance.x + distance.y * distance.y);
+				
+				float rij <- myself.size/2.0 + self.size/2.0;
+				
+				
+				point nij <- {
+					(myself.location.x - self.location.x)/(dij+0.000001),
+					(myself.location.y - self.location.y)/(dij+0.000001)
+				};
+				
+				
+				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
+				
+				wall_repulsion_force <- {
+					wall_repulsion_force.x + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.x * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2)),
+					wall_repulsion_force.y + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.y * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2))
+				};
+			}
+		}
+		
+		return wall_repulsion_force;
+	}
+	
 	init {
 		if nd mod 2 = 0 { 
 			color <- #black;
-			location <- {widthHeight-rnd(5),rnd(widthHeight)};
+			location <- {widthHeight-rnd(widthHeight/2-1),rnd(widthHeight)};
 			//location <- {widthHeight,widthHeight/2.0+1}; 
 			aim <- {0, location.y};
     	} else {
     		color <- #yellow;
-    		location <- {0+rnd(5),rnd(widthHeight)};
+    		location <- {0+rnd(widthHeight/2-1),rnd(widthHeight)};
     		//location <- {0,widthHeight/2.0-1};
     		aim <- {widthHeight, location.y};
     	}
@@ -94,13 +153,6 @@ species people skills:[moving] {
 		
 		desired_direction <- {(aim.x - location.x) / (abs(sqrt( (aim.x - location.x)*(aim.x - location.x) + (aim.y - location.y)*(aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt( (aim.x - location.x)*(aim.x - location.x) + (aim.y - location.y)*(aim.y - location.y))))} ;
 	}
-	
-	/*reflex change {
-		if ( abs(location.x - aim.x) < 1 and abs(location.y - aim.y) < 1 ) {
-			aim <- {rnd(widthHeight)as int, rnd(widthHeight)as int};
-			actual_velocity <- {0,0};
-		} 
-	}*/
 	
 	reflex sortie {
 		if abs(location.x - aim.x) < 1 {
@@ -120,7 +172,7 @@ species people skills:[moving] {
 		desired_direction <- {(aim.x - location.x) / (abs(norme)), (aim.y - location.y) / (abs(norme))} ;
 		
 		/**
-		 *  Calculé l'ensembles des forces
+		 *  Calculer l'ensembles des forces
 		 **/
 		
 		// force pour ateindre l'objectif 
@@ -129,62 +181,12 @@ species people skills:[moving] {
 				(desired_speed * desired_direction.y - actual_velocity.y)/relaxation
 			};
 			
-		//Force de repulser des piétons
-		point social_repulsion_force <- {0.0,0.0};
-		
-			
-		ask people
-		{
-			if(self != myself) {
-				point distance <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float dij <- sqrt(distance.x * distance.x + distance.y * distance.y);
-				
-				float rij <- myself.size/2.0 + self.size/2.0;
-				
-				
-				point nij <- {
-					(myself.location.x - self.location.x)/dij,
-					(myself.location.y - self.location.y)/dij
-				};
-				
-				
-				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
-				
-				social_repulsion_force <- {
-					social_repulsion_force.x + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.x * ( lambda + (1-lambda) * (1+phiij)/2)),
-					social_repulsion_force.y + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.y * ( lambda + (1-lambda) * (1+phiij)/2))
-				};
-			}
-		}
-		
-		point wall_repulsion_force <- {0.0,0.0};
-		
-		ask wall
-		{
-			if(self != myself) {
-				point distance <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float dij <- sqrt(distance.x * distance.x + distance.y * distance.y);
-				
-				float rij <- myself.size/2.0 + self.size/2.0;
-				
-				
-				point nij <- {
-					(myself.location.x - self.location.x)/dij,
-					(myself.location.y - self.location.y)/dij
-				};
-				
-				
-				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
-				
-				social_repulsion_force <- {
-					social_repulsion_force.x + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.x * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2)),
-					social_repulsion_force.y + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.y * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2))
-				};
-			}
-		}
 		
 		// calcul de la somme des forces
-		point w <- {force_mouvement.x + social_repulsion_force.x + wall_repulsion_force.x,force_mouvement.y + social_repulsion_force.y + wall_repulsion_force.y};
+		point w <- {
+			force_mouvement.x + social_repulsion_force_function().x + wall_repulsion_force_function().x,
+			force_mouvement.y + social_repulsion_force_function().y + wall_repulsion_force_function().y
+		};
 		
 		
 		// déterminé la nouvelle acceleration
@@ -209,7 +211,7 @@ species people skills:[moving] {
 //				heading <-0;
 //			}
 			
-		write ""+ color.green + ": " + speed + "," + heading + "," + social_repulsion_force;
+//		write ""+ color.green + ": " + speed + "," + heading + "," + social_repulsion_force;
 		
 		//On vérifie qu'on est pas en dehors de la zone avant le déplcement
 		float Locx;
@@ -235,6 +237,8 @@ species people skills:[moving] {
 	aspect default { 
 		draw circle(1)  color: color;
 	}
+
+	
 }
 
 
