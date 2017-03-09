@@ -9,15 +9,22 @@ model socialForceModel
 
 global { 
 	//Nombre de personne
-	int number_of_agents min: 1 <- 1 ;
+	int number_of_agents min: 1 <- 2 ;
 	
-	int number_of_walls min: 0 <- 40 ;
+	int number_of_middle_walls min: 0 <- 40;
+	
+	
 	
 	// taille du terrain
 	int widthHeight min: 10 <- 50;
 	
+	int number_of_side_walls <- widthHeight*2;
+	
+	int bottleneckSize <- 10;
+	
 	int nd <- 0;
-	int nbwall <- 0;
+	int nbMiddleWall <- 0;
+	int nbSideWall <- 0;
 	
 	float delta <- 2.0;
 	
@@ -40,7 +47,7 @@ global {
 	init { 
 		//Creation des personnes
 		create people number: number_of_agents;
-		create wall number: number_of_walls;
+		create wall number: number_of_middle_walls + number_of_side_walls;
 	}  
 }  
   
@@ -56,7 +63,7 @@ species people skills:[moving] {
 	float Ai <- 2.0;
 	
 	//Seuil de réactivité
-	float Bi <- 5.0;
+	float Bi <- 2.0;
 	
 	//Sensibilité du champs de vision [0,1] => 0 -> 0° et 1 -> 360°
 	float lambda <- 0.25;
@@ -76,12 +83,12 @@ species people skills:[moving] {
 			color <- #black;
 			location <- {widthHeight-rnd(5),rnd(widthHeight)};
 			//location <- {widthHeight,widthHeight/2.0+1}; 
-			aim <- {0, location.y+5};
+			aim <- {0, location.y};
     	} else {
     		color <- #yellow;
     		location <- {0+rnd(5),rnd(widthHeight)};
     		//location <- {0,widthHeight/2.0-1};
-    		aim <- {widthHeight, location.y+5};
+    		aim <- {widthHeight, location.y};
     	}
 		nd <- nd+1;
 		
@@ -98,14 +105,16 @@ species people skills:[moving] {
 	reflex sortie {
 		if abs(location.x - aim.x) < 1 {
 			if (aim.x = 0) {
-				location <- {widthHeight,location.y};
+				location <- {widthHeight,rnd(widthHeight)};
 			} else {
-				location <- {0,location.y};
+				location <- {0,rnd(widthHeight)};
 			}	
 		}
 	}
 	
 	reflex step {
+		aim <- {aim.x, location.y};
+		
 		// Mettre à jour la direction désiré
 		float norme <- sqrt( (aim.x - location.x)*(aim.x - location.x) + (aim.y - location.y)*(aim.y - location.y));
 		desired_direction <- {(aim.x - location.x) / (abs(norme)), (aim.y - location.y) / (abs(norme))} ;
@@ -122,6 +131,7 @@ species people skills:[moving] {
 			
 		//Force de repulser des piétons
 		point social_repulsion_force <- {0.0,0.0};
+		
 			
 		ask people
 		{
@@ -138,7 +148,7 @@ species people skills:[moving] {
 				};
 				
 				
-				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
+				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
 				
 				social_repulsion_force <- {
 					social_repulsion_force.x + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.x * ( lambda + (1-lambda) * (1+phiij)/2)),
@@ -147,8 +157,34 @@ species people skills:[moving] {
 			}
 		}
 		
+		point wall_repulsion_force <- {0.0,0.0};
+		
+		ask wall
+		{
+			if(self != myself) {
+				point distance <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
+				float dij <- sqrt(distance.x * distance.x + distance.y * distance.y);
+				
+				float rij <- myself.size/2.0 + self.size/2.0;
+				
+				
+				point nij <- {
+					(myself.location.x - self.location.x)/dij,
+					(myself.location.y - self.location.y)/dij
+				};
+				
+				
+				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
+				
+				social_repulsion_force <- {
+					social_repulsion_force.x + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.x * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2)),
+					social_repulsion_force.y + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.y * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2))
+				};
+			}
+		}
+		
 		// calcul de la somme des forces
-		point w <- {force_mouvement.x + social_repulsion_force.x/* +force_repulsion_individus.x /*+ force_repulsion_murs.x */,force_mouvement.y + social_repulsion_force.y /* + force_repulsion_individus.y /*+ force_repulsion_murs.y*/};
+		point w <- {force_mouvement.x + social_repulsion_force.x + wall_repulsion_force.x,force_mouvement.y + social_repulsion_force.y + wall_repulsion_force.y};
 		
 		
 		// déterminé la nouvelle acceleration
@@ -208,8 +244,21 @@ species wall {
 	float size <- 1.0;
 	
 	init {
-		location <- {widthHeight/2.0, nbwall};
-		nbwall <- nbwall+1;
+		if(nbMiddleWall < number_of_middle_walls) {
+			if(nbMiddleWall <= number_of_middle_walls/2) {
+				location <- {widthHeight/2.0, nbMiddleWall+1};
+				} else {
+					location <- {widthHeight/2.0, nbMiddleWall + bottleneckSize};
+				}
+			nbMiddleWall <- nbMiddleWall+1;
+		}
+		else if (nbSideWall <= number_of_side_walls/2) {
+				location <- {nbSideWall,0};
+				nbSideWall <- nbSideWall+1;
+			} else {
+				location <- {nbSideWall-widthHeight,widthHeight};
+				nbSideWall <- nbSideWall+1;
+			}
 	}
 	
 	aspect default { 
