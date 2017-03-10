@@ -10,27 +10,27 @@ global {
 	//Nombre de personne
 	int number_of_agents min: 1 <- 2 ;
 	
-	int number_of_middle_walls min: 0 <- 20;
+	int number_of_walls min: 0 <- 4;
 	
 	
 	
 	// taille du terrain
 	int widthHeight min: 10 <- 50;
 	
-	int number_of_side_walls <- widthHeight*2;
 	
-	int bottleneckSize <- 10;
+	int bottleneckSize min: 0 <- 10;
 	
 	int nd <- 0;
-	int nbMiddleWall <- 0;
-	int nbSideWall <- 0;
+	int nbWalls <- 0;
 	
 	float relaxation <- 1.0;
+	
+	geometry shape <- square(widthHeight);
 	
 	init { 
 		//Creation des personnes
 		create people number: number_of_agents;
-		create wall number: number_of_middle_walls + number_of_side_walls;
+		create wall number: number_of_walls;
 	}  
 }  
   
@@ -40,16 +40,16 @@ species people skills:[moving] {
 	rgb color;
 	
 	// Taille d'une personne
-	float size <- 3.0;
+	float size <- 1.0;
 	
 	//Intensité de réaction du péton
 	float Ai <- 5.0;
 	
 	//Seuil de réactivité
-	float Bi <- 1.5;
+	float Bi <- 1.0;
 	
 	//Sensibilité du champs de vision [0,1] => 0 -> 0° et 1 -> 360°
-	float lambda <- 0.25;
+	float lambda <- 0.6;
 	
 	// Destination
 	point aim ;
@@ -96,23 +96,20 @@ species people skills:[moving] {
 		ask wall
 		{
 			if(self != myself) {
-				point distance <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float dij <- sqrt(distance.x * distance.x + distance.y * distance.y);
-				
-				float rij <- myself.size/2.0 + self.size/2.0;
-				
+				point distanceCenter <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
+				float distance <- myself distance_to self;
 				
 				point nij <- {
-					(myself.location.x - self.location.x)/(dij+0.000001),
-					(myself.location.y - self.location.y)/(dij+0.000001)
+					(myself.location.x - self.location.x)/norm(distanceCenter),
+					(myself.location.y - self.location.y)/norm(distanceCenter)
 				};
 				
 				
 				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
 				
 				wall_repulsion_force <- {
-					wall_repulsion_force.x + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.x * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2)),
-					wall_repulsion_force.y + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.y * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2))
+					wall_repulsion_force.x + (myself.Ai * exp( -distance/myself.Bi ) * nij.x * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2)),
+					wall_repulsion_force.y + (myself.Ai * exp( -distance/myself.Bi ) * nij.y * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2))
 				};
 			}
 		}
@@ -225,30 +222,22 @@ species people skills:[moving] {
 
 
 //Les Murs
-species wall {  
-	
-	float size <- 1.0;
-	
+species wall {
+	float width;
+	float length;
+	  
 	init {
-		if(nbMiddleWall < number_of_middle_walls) {
-			if(nbMiddleWall <= number_of_middle_walls/2) {
-				location <- {widthHeight/2.0, nbMiddleWall+1};
-				} else {
-					location <- {widthHeight/2.0, nbMiddleWall + bottleneckSize};
-				}
-			nbMiddleWall <- nbMiddleWall+1;
+		switch nbWalls {
+			match 0 {length <- widthHeight + 0.0; width <- 1.0;shape <- rectangle(length,width);location <- {widthHeight/2,0.5};}
+			match 1 {length <- widthHeight + 0.0; width <- 1.0;shape <- rectangle(length,width);location <- {widthHeight/2,widthHeight-0.5};}
+			match 2 {length <- 1.0; width <- widthHeight/2-1.0-bottleneckSize/2;shape <- rectangle(length,width);location <- {widthHeight/2.0,width/2+1};}
+			match 3 {length <- 1.0; width <- widthHeight/2-1.0-bottleneckSize/2;shape <- rectangle(length,width);location <- {widthHeight/2.0,widthHeight/2-1.0-bottleneckSize/2+bottleneckSize + width/2+1};}
 		}
-		else if (nbSideWall <= number_of_side_walls/2) {
-				location <- {nbSideWall,0};
-				nbSideWall <- nbSideWall+1;
-			} else {
-				location <- {nbSideWall-widthHeight,widthHeight};
-				nbSideWall <- nbSideWall+1;
-			}
+		nbWalls <- nbWalls +1;
 	}
 	
 	aspect default { 
-		draw square(1)  color: rgb(0,0,0);
+		draw rectangle(length,width)  color: rgb(0,0,0);
 	}
 }
 
@@ -256,6 +245,7 @@ species wall {
 experiment helbing type: gui {
 	parameter 'Nombre de personne' var: number_of_agents;
 	parameter 'Taille du terrain' var:widthHeight;
+	parameter 'Bottleneck size' var: bottleneckSize;
 	output {
 		display SocialForceModel{
 			species people;
