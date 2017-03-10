@@ -10,7 +10,7 @@ global {
 	//Nombre de personne
 	int number_of_agents min: 1 <- 2 ;
 	
-	int number_of_middle_walls min: 0 <- 40;
+	int number_of_middle_walls min: 0 <- 20;
 	
 	
 	
@@ -25,23 +25,7 @@ global {
 	int nbMiddleWall <- 0;
 	int nbSideWall <- 0;
 	
-	float delta <- 2.0;
-	
 	float relaxation <- 1.0;
-	
-	float phi <- 100.0;
-	
-	float c <- 0.5;
-	
-	float sigma <- 0.3;
-	
-	float Vab <- 2.1;
-	
-	float Uab <- 10.0;
-	
-	float R <- 0.2;
-	
-	geometry shape <- square(widthHeight);
 	
 	init { 
 		//Creation des personnes
@@ -56,10 +40,10 @@ species people skills:[moving] {
 	rgb color;
 	
 	// Taille d'une personne
-	float size <- 1.0;
+	float size <- 3.0;
 	
 	//Intensité de réaction du péton
-	float Ai <- 2.0;
+	float Ai <- 5.0;
 	
 	//Seuil de réactivité
 	float Bi <- 1.5;
@@ -73,7 +57,7 @@ species people skills:[moving] {
 	// Direction désiré
 	point desired_direction;
 	
-	float desired_speed <- 1;
+	float desired_speed <- 1.0;
 	
 	point actual_velocity <- {0.0, 0,0};
 	
@@ -84,22 +68,21 @@ species people skills:[moving] {
 		ask people
 		{
 			if(self != myself) {
-				point distance <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float dij <- sqrt(distance.x * distance.x + distance.y * distance.y);
-				float rij <- myself.size/2.0 + self.size/2.0;
+				point distanceCentre <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
+				float distance <- myself distance_to self;
 				
 				
 				point nij <- {
-					(myself.location.x - self.location.x)/dij,
-					(myself.location.y - self.location.y)/dij
+					(myself.location.x - self.location.x)/norm(distanceCentre),
+					(myself.location.y - self.location.y)/norm(distanceCentre)
 				};
 				
 				
 				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
 				
 				social_repulsion_force <- {
-					social_repulsion_force.x + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.x * ( lambda + (1-lambda) * (1+phiij)/2)),
-					social_repulsion_force.y + (myself.Ai * exp( (rij-dij)/myself.Bi ) * nij.y * ( lambda + (1-lambda) * (1+phiij)/2))
+					social_repulsion_force.x + (myself.Ai * exp( -distance/myself.Bi ) * nij.x * ( lambda + (1-lambda) * (1+phiij)/2)),
+					social_repulsion_force.y + (myself.Ai * exp( -distance/myself.Bi ) * nij.y * ( lambda + (1-lambda) * (1+phiij)/2))
 				};
 			}
 		}
@@ -138,15 +121,14 @@ species people skills:[moving] {
 	}
 	
 	init {
+		shape <- circle(size);
 		if nd mod 2 = 0 { 
 			color <- #black;
 			location <- {widthHeight-rnd(widthHeight/2-1),rnd(widthHeight)};
-			//location <- {widthHeight,widthHeight/2.0+1}; 
 			aim <- {0, location.y};
     	} else {
     		color <- #yellow;
     		location <- {0+rnd(widthHeight/2-1),rnd(widthHeight)};
-    		//location <- {0,widthHeight/2.0-1};
     		aim <- {widthHeight, location.y};
     	}
 		nd <- nd+1;
@@ -235,7 +217,7 @@ species people skills:[moving] {
 	}
 	
 	aspect default { 
-		draw circle(1)  color: color;
+		draw circle(size)  color: color;
 	}
 
 	
