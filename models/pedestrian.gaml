@@ -52,7 +52,7 @@ species people skills: [moving]
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <- 1.0;
+	float desired_speed <- 2.0;
 	point actual_velocity <- { 0.0, 0, 0 };
 	point social_repulsion_force_function
 	{
@@ -158,26 +158,8 @@ species people skills: [moving]
 		}
 
 		//Movement
-		float Locx;
-		float Locy;
-		if (location.x + actual_velocity.x >= 0 - size and location.x + actual_velocity.x <= spaceLength + size)
-		{
-			Locx <- location.x + actual_velocity.x;
-		} else
-		{
-			Locx <- location.x;
-		}
+		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
 
-		if (location.y + actual_velocity.y >= 0 - size and location.y + actual_velocity.y <= spaceWidth + size)
-		{
-			Locy <- location.y + actual_velocity.y;
-		} else
-		{
-			Locy <- location.y;
-		}
-
-		location <- { Locx, Locy };
-		write location;
 	}
 
 	aspect default
@@ -245,9 +227,9 @@ experiment helbing type: gui
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
 	parameter 'Bottleneck size' var: bottleneckSize;
-	parameter 'Interaction strength' var: Ai;
-	parameter 'Range of the repulsive interactions' var: Bi;
-	parameter 'Peception' var: lambda;
+//	parameter 'Interaction strength' var: Ai;
+//	parameter 'Range of the repulsive interactions' var: Bi;
+//	parameter 'Peception' var: lambda;
 	output
 	{
 		display SocialForceModel
