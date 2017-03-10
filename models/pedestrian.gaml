@@ -12,8 +12,8 @@ global
 	int number_of_walls min: 0 <- 4;
 
 	//space dimension
-	int spaceWidth min: 10 <- 30;
-	int spaceLength min: 10 <- 50;
+	int spaceWidth min: 5 <- 30;
+	int spaceLength min: 5 <- 50;
 	int bottleneckSize min: 0 <- 10;
 
 	//incremental var use in species init
@@ -22,6 +22,15 @@ global
 
 	//Acceleration relaxation time
 	float relaxation <- 1.0;
+	
+	//Interaction strength
+	float Ai min:0.0 <- 5.0;
+
+	//Range of the repulsive interactions
+	float Bi min:0.0 <- 2.0;
+	
+	//Peception [0,1] => 0 -> 0° and 1 -> 360°
+	float lambda min:0.0 max:1.0 <- 0.5;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
@@ -38,14 +47,7 @@ species people skills: [moving]
 	rgb color;
 	float size <- 1.0;
 
-	//Interaction strength
-	float Ai <- 2.0;
-
-	//Range of the repulsive interactions
-	float Bi <- 1.5;
-
-	//Peception [0,1] => 0 -> 0° and 1 -> 360°
-	float lambda <- 0.5;
+	
 
 	// Destination
 	point aim;
@@ -62,9 +64,10 @@ species people skills: [moving]
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
 				float distance <- myself distance_to self;
 				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
-				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
+//				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
+				float phiij <- -nij.x * actual_velocity.x/(norm(actual_velocity)+0.0000001) + -nij.y * actual_velocity.x/(norm(actual_velocity)+0.0000001);
 				social_repulsion_force <- {
-				social_repulsion_force.x + (myself.Ai * exp(-distance / myself.Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (myself.Ai * exp(-distance / myself.Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
+				social_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
 				};
 			}
 
@@ -83,10 +86,9 @@ species people skills: [moving]
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
 				float distance <- myself distance_to self;
 				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
-				write distance;
 				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
 				wall_repulsion_force <- {
-				wall_repulsion_force.x + (myself.Ai * exp(-distance / myself.Bi) * nij.x * (myself.lambda + (1 - myself.lambda) * (1 + phiij) / 2)), wall_repulsion_force.y + (myself.Ai * exp(-distance / myself.Bi) * nij.y * (myself.lambda + (1 - myself.lambda) * (1 + phiij) / 2))
+				wall_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), wall_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
 				};
 			}
 
@@ -102,12 +104,12 @@ species people skills: [moving]
 		{
 			color <- # black;
 			location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - 1 - size) + 1 + size };
-			aim <- { 0, location.y };
+			aim <- { -size, location.y };
 		} else
 		{
 			color <- # yellow;
 			location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - 1 - size) + 1 + size };
-			aim <- { spaceLength, location.y };
+			aim <- { spaceLength+size, location.y };
 		}
 
 		nd <- nd + 1;
@@ -134,7 +136,7 @@ species people skills: [moving]
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
-		desired_direction <- { (aim.x - location.x) / norme + 0.000000001, (aim.y - location.y) / norme + 0.000000001 };
+		desired_direction <- { (aim.x - location.x) / (norme + 0.000000001), (aim.y - location.y) / (norme + 0.000000001) };
 
 		//Goal attraction force
 		point goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
@@ -175,6 +177,7 @@ species people skills: [moving]
 		}
 
 		location <- { Locx, Locy };
+		write location;
 	}
 
 	aspect default
@@ -242,6 +245,9 @@ experiment helbing type: gui
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
 	parameter 'Bottleneck size' var: bottleneckSize;
+	parameter 'Interaction strength' var: Ai;
+	parameter 'Range of the repulsive interactions' var: Bi;
+	parameter 'Peception' var: lambda;
 	output
 	{
 		display SocialForceModel
