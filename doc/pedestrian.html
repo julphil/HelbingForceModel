@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+	  <title>Description of the model pedestrian</title>
+		<style type="text/css">
+			body{font: 52.5% "Trebuchet MS", sans-serif; margin: 50px;  background-color: #E8E8E8;}
+			p,ul{font-size: 1.4em; line-height: 1.5; margin: 1em 0; width: 65%;}
+			#dialog_link {padding: .4em 1em .4em 20px;text-decoration: none;position: relative;}
+			#dialog_link span.ui-icon {margin: 0 5px 0 0;position: absolute;left: .2em;top: 50%;margin-top: -8px;}
+			ul#icons {margin: 0; padding: 0;}
+			ul#icons li {margin: 2px; position: relative; padding: 4px 0; cursor: pointer; float: left;  list-style: none;}
+			ul#icons span.ui-icon {float: left; margin: 0 4px;}
+			table, th, td {border: 1px solid black;}
+		</style>
+	</head>
+
+	<body>
+		<div id="author">
+			<h3>By Julien Philippe</h3>
+		</div>
+		
+		<br/>
+		
+		<div id="description">
+			<h1>Description of the model pedestrian</h1>
+				<p>Based on the Helbing Social force model of pedestrian crowd</p>
+		</div>
+		
+		<br/>
+		<br/>
+		
+		<div id="snapshots"><h1>Snapshots</h1>
+		<br/>
+			<img src=""/>
+			<img src=""/>
+			<img src=""/>
+		</div>
+		
+		<div id="body">
+			<h2>Parameters</h2>
+			<table>
+				<tr>
+					<th>Parameter name</th>
+					<th>Use for</th>
+					<th>Values</th>
+				</tr>
+				<tr>
+					<td>Pedestrian number</td>
+					<td>Set the number of pedestrian generate for the simulation</td>
+					<td>Min : 1. Half will try to reach the left side of the simulation space, the other half the right side</td>
+				</tr>
+				<tr>
+					<td>Space length</td>
+					<td>The length of the horizontal side</td>
+					<td>Min 5</td>
+				</tr>
+				<tr>
+					<td>Space width</td>
+					<td>The length of the vertical side</td>
+					<td>Min 5</td>
+				</tr>
+				<tr>
+					<td>Bottleneck size</td>
+					<td>Size of the hole between the two part of the space</td>
+					<td>Min : 0. With 0 there is no way to switch side for any agent. Beside, reliant on the Interaction strength and the Range of the repulsive interactions, a non null but to small bottleneck cannot be pass. If you want no bottleneck, you need to choose a size superior or equal to the Space width</td>
+				</tr>
+			</table>
+		</div>
+	</body>
+</html>
