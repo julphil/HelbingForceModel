@@ -3,255 +3,253 @@
 * Author: Julien Philippe
 * Description:  Implementation of Helbing social force model
 */
-
 model socialForceModel
 
-global { 
-	//Nombre de personne
-	int number_of_agents min: 1 <- 2 ;
-	
+
+global
+{
+	int number_of_agents min: 1 <- 2;
 	int number_of_walls min: 0 <- 4;
-	
-	
-	
-	// taille du terrain
-	int spaceWidth min: 10 <- 40;
+
+	//space dimension
+	int spaceWidth min: 10 <- 30;
 	int spaceLength min: 10 <- 50;
-	
-	
 	int bottleneckSize min: 0 <- 10;
-	
+
+	//incremental var use in species init
 	int nd <- 0;
 	int nbWalls <- 0;
-	
+
+	//Acceleration relaxation time
 	float relaxation <- 1.0;
-	
-	geometry shape <- rectangle(spaceLength,spaceWidth);
-	
-	init { 
-		//Creation des personnes
+
+	//Space shape
+	geometry shape <- rectangle(spaceLength, spaceWidth);
+	init
+	{
 		create people number: number_of_agents;
 		create wall number: number_of_walls;
-	}  
-}  
-  
-//Les personnes
-species people skills:[moving] {  
-	// Couleur de l'agent
+	}
+
+}
+
+species people skills: [moving]
+{
 	rgb color;
-	
-	// Taille d'une personne
 	float size <- 1.0;
-	
-	//Intensité de réaction du péton
-	float Ai <- 5.0;
-	
-	//Seuil de réactivité
-	float Bi <- 1.0;
-	
-	//Sensibilité du champs de vision [0,1] => 0 -> 0° et 1 -> 360°
+
+	//Interaction strength
+	float Ai <- 2.0;
+
+	//Range of the repulsive interactions
+	float Bi <- 1.5;
+
+	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda <- 0.5;
-	
+
 	// Destination
-	point aim ;
-	
-	// Direction désiré
+	point aim;
 	point desired_direction;
-	
 	float desired_speed <- 1.0;
-	
-	point actual_velocity <- {0.0, 0,0};
-	
-	point social_repulsion_force_function {
-		//Force de repulser des piétons
-		point social_repulsion_force <- {0.0,0.0};
-		
+	point actual_velocity <- { 0.0, 0, 0 };
+	point social_repulsion_force_function
+	{
+		point social_repulsion_force <- { 0.0, 0.0 };
 		ask people
 		{
-			if(self != myself) {
-				point distanceCentre <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
+			if (self != myself)
+			{
+				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
 				float distance <- myself distance_to self;
-				
-				
-				point nij <- {
-					(myself.location.x - self.location.x)/norm(distanceCentre),
-					(myself.location.y - self.location.y)/norm(distanceCentre)
-				};
-				
-				
+				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
 				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
-				
 				social_repulsion_force <- {
-					social_repulsion_force.x + (myself.Ai * exp( -distance/myself.Bi ) * nij.x * ( lambda + (1-lambda) * (1+phiij)/2)),
-					social_repulsion_force.y + (myself.Ai * exp( -distance/myself.Bi ) * nij.y * ( lambda + (1-lambda) * (1+phiij)/2))
+				social_repulsion_force.x + (myself.Ai * exp(-distance / myself.Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (myself.Ai * exp(-distance / myself.Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
 				};
 			}
+
 		}
-		
+
 		return social_repulsion_force;
 	}
-	
-	point wall_repulsion_force_function {
-		point wall_repulsion_force <- {0.0,0.0};
-		
+
+	point wall_repulsion_force_function
+	{
+		point wall_repulsion_force <- { 0.0, 0.0 };
 		ask wall
 		{
-			if(self != myself) {
-				point distanceCenter <- {myself.location.x - self.location.x, myself.location.y - self.location.y };
+			if (self != myself)
+			{
+				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
 				float distance <- myself distance_to self;
-				
-				point nij <- {
-					(myself.location.x - self.location.x)/norm(distanceCenter),
-					(myself.location.y - self.location.y)/norm(distanceCenter)
-				};
-				
-				
+				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
+				write distance;
 				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
-				
 				wall_repulsion_force <- {
-					wall_repulsion_force.x + (myself.Ai * exp( -distance/myself.Bi ) * nij.x * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2)),
-					wall_repulsion_force.y + (myself.Ai * exp( -distance/myself.Bi ) * nij.y * ( myself.lambda + (1-myself.lambda) * (1+phiij)/2))
+				wall_repulsion_force.x + (myself.Ai * exp(-distance / myself.Bi) * nij.x * (myself.lambda + (1 - myself.lambda) * (1 + phiij) / 2)), wall_repulsion_force.y + (myself.Ai * exp(-distance / myself.Bi) * nij.y * (myself.lambda + (1 - myself.lambda) * (1 + phiij) / 2))
 				};
 			}
+
 		}
-		
+
 		return wall_repulsion_force;
 	}
-	
-	init {
+
+	init
+	{
 		shape <- circle(size);
-		if nd mod 2 = 0 { 
-			color <- #black;
-			location <- {spaceLength-rnd(spaceLength/2-1),rnd(spaceWidth-1)+1};
-			aim <- {0, location.y};
-    	} else {
-    		color <- #yellow;
-    		location <- {0+rnd(spaceLength/2-1),rnd(spaceWidth-1)+1};
-    		aim <- {spaceLength, location.y};
-    	}
-		nd <- nd+1;
-		
-		desired_direction <- {(aim.x - location.x) / (abs(sqrt( (aim.x - location.x)*(aim.x - location.x) + (aim.y - location.y)*(aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt( (aim.x - location.x)*(aim.x - location.x) + (aim.y - location.y)*(aim.y - location.y))))} ;
-	}
-	
-	reflex sortie {
-		if abs(location.x - aim.x) < 1 {
-			if (aim.x = 0) {
-				location <- {spaceLength,rnd(spaceWidth-1)+1};
-			} else {
-				location <- {0,rnd(spaceWidth-1)+1};
-			}	
+		if nd mod 2 = 0
+		{
+			color <- # black;
+			location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - 1 - size) + 1 + size };
+			aim <- { 0, location.y };
+		} else
+		{
+			color <- # yellow;
+			location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - 1 - size) + 1 + size };
+			aim <- { spaceLength, location.y };
 		}
-	}
-	
-	reflex step {
-		aim <- {aim.x, location.y};
-		
-		// Mettre à jour la direction désiré
-		float norme <- sqrt( (aim.x - location.x)*(aim.x - location.x) + (aim.y - location.y)*(aim.y - location.y));
-		desired_direction <- {(aim.x - location.x) / (abs(norme)), (aim.y - location.y) / (abs(norme))} ;
-		
-		/**
-		 *  Calculer l'ensembles des forces
-		 **/
-		
-		// force pour ateindre l'objectif 
-		point force_mouvement <- {
-				(desired_speed * desired_direction.x - actual_velocity.x)/relaxation,
-				(desired_speed * desired_direction.y - actual_velocity.y)/relaxation
-			};
-			
-		
-		// calcul de la somme des forces
-		point w <- {
-			force_mouvement.x + social_repulsion_force_function().x + wall_repulsion_force_function().x,
-			force_mouvement.y + social_repulsion_force_function().y + wall_repulsion_force_function().y
+
+		nd <- nd + 1;
+		desired_direction <- {
+		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
 		};
-		
-		
-		// déterminé la nouvelle acceleration
-		float norme_w <- abs(sqrt(w.x * w.x + w.y * w.y));
-		
-		float max_velocity <- 1.3 * desired_speed; 
-		
-		if (norme_w <= max_velocity) {
-			actual_velocity <- {actual_velocity.x + w.x,actual_velocity.y +  w.y};  
-		} else {
-			actual_velocity <- {
-				w.x * ( max_velocity / norme_w),
-				w.y * ( max_velocity / norme_w)
-			};
+	}
+
+	reflex sortie
+	{
+		if location.x >= spaceLength
+		{
+			location <- { 0, rnd(spaceWidth - 1 - size) + 1 + size };
+		} else if location.x <= 0
+		{
+			location <- { spaceLength, rnd(spaceWidth - 1 - size) + 1 + size };
 		}
-		
-//		speed <- norm(actual_velocity);
-//		
-//		if speed != 0 {
-//			heading <- acos((actual_velocity.x)/speed);
-//			} else {
-//				heading <-0;
-//			}
-			
-//		write ""+ color.green + ": " + speed + "," + heading + "," + social_repulsion_force;
-		
-		//On vérifie qu'on est pas en dehors de la zone avant le déplcement
+
+	}
+
+	reflex step
+	{
+		aim <- { aim.x, location.y };
+
+		//update the goal direction
+		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
+		desired_direction <- { (aim.x - location.x) / norme + 0.000000001, (aim.y - location.y) / norme + 0.000000001 };
+
+		//Goal attraction force
+		point goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
+
+		// Sum of the forces
+		point force_sum <- {
+		goal_attraction_force.x + social_repulsion_force_function().x + wall_repulsion_force_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y
+		};
+
+		// Acceleration
+		float norme_sum <- norm(force_sum);
+		float max_velocity <- 1.3 * desired_speed;
+		if (norme_sum <= max_velocity)
+		{
+			actual_velocity <- { actual_velocity.x + force_sum.x, actual_velocity.y + force_sum.y };
+		} else
+		{
+			actual_velocity <- { force_sum.x * (max_velocity / norme_sum), force_sum.y * (max_velocity / norme_sum) };
+		}
+
+		//Movement
 		float Locx;
 		float Locy;
-		
-		
-		if(location.x + actual_velocity.x >= 0-size and location.x + actual_velocity.x <= spaceLength+size) {
-				Locx <- location.x + actual_velocity.x;
-			} else {
-				Locx <- location.x;
-			}
-		if( location.y + actual_velocity.y >= 0-size and location.y + actual_velocity.y <= spaceWidth+size) {
+		if (location.x + actual_velocity.x >= 0 - size and location.x + actual_velocity.x <= spaceLength + size)
+		{
+			Locx <- location.x + actual_velocity.x;
+		} else
+		{
+			Locx <- location.x;
+		}
+
+		if (location.y + actual_velocity.y >= 0 - size and location.y + actual_velocity.y <= spaceWidth + size)
+		{
 			Locy <- location.y + actual_velocity.y;
-		} else {
+		} else
+		{
 			Locy <- location.y;
 		}
-		
-		location <- {Locx,Locy};
-//		do move;
-		
-	}
-	
-	aspect default { 
-		draw circle(size)  color: color;
+
+		location <- { Locx, Locy };
 	}
 
-	
+	aspect default
+	{
+		draw circle(size) color: color;
+	}
+
 }
 
-
-//Les Murs
-species wall {
+species wall
+{
 	float width;
 	float length;
-	  
-	init {
-		switch nbWalls {
-			match 0 {length <- spaceLength + 0.0; width <- 1.0;shape <- rectangle(length,width);location <- {spaceLength/2,0.5};}
-			match 1 {length <- spaceLength + 0.0; width <- 1.0;shape <- rectangle(length,width);location <- {spaceLength/2,spaceWidth-0.5};}
-			match 2 {length <- 1.0; width <- spaceWidth/2-1.0-bottleneckSize/2;shape <- rectangle(length,width);location <- {spaceLength/2.0,width/2+1};}
-			match 3 {length <- 1.0; width <- spaceWidth/2-1.0-bottleneckSize/2;shape <- rectangle(length,width);location <- {spaceLength/2.0,spaceWidth/2-1.0-bottleneckSize/2+bottleneckSize + width/2+1};}
+	init
+	{
+		switch nbWalls
+		{
+			match 0
+			{
+				length <- spaceLength + 0.0;
+				width <- 1.0;
+				shape <- rectangle(length, width);
+				location <- { spaceLength / 2, 0.5 };
+			}
+
+			match 1
+			{
+				length <- spaceLength + 0.0;
+				width <- 1.0;
+				shape <- rectangle(length, width);
+				location <- { spaceLength / 2, spaceWidth - 0.5 };
+			}
+
+			match 2
+			{
+				length <- 1.0;
+				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
+				shape <- rectangle(length, width);
+				location <- { spaceLength / 2.0, width / 2 + 1 };
+			}
+
+			match 3
+			{
+				length <- 1.0;
+				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
+				shape <- rectangle(length, width);
+				location <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
+			}
+
 		}
-		nbWalls <- nbWalls +1;
+
+		nbWalls <- nbWalls + 1;
 	}
-	
-	aspect default { 
-		draw rectangle(length,width)  color: rgb(0,0,0);
+
+	aspect default
+	{
+		draw rectangle(length, width) color: rgb(0, 0, 0);
 	}
+
 }
 
-
-experiment helbing type: gui {
-	parameter 'Nombre de personne' var: number_of_agents;
-	parameter 'Longeur du terrain' var:spaceLength;
-	parameter 'Largeur du terrain' var:spaceWidth; 
+experiment helbing type: gui
+{
+	parameter 'Pedestrian number' var: number_of_agents;
+	parameter 'Space length' var: spaceLength;
+	parameter 'Space width' var: spaceWidth;
 	parameter 'Bottleneck size' var: bottleneckSize;
-	output {
-		display SocialForceModel{
+	output
+	{
+		display SocialForceModel
+		{
 			species people;
 			species wall;
 		}
+
 	}
+
 }
