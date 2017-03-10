@@ -15,7 +15,8 @@ global {
 	
 	
 	// taille du terrain
-	int widthHeight min: 10 <- 50;
+	int spaceWidth min: 10 <- 40;
+	int spaceLength min: 10 <- 50;
 	
 	
 	int bottleneckSize min: 0 <- 10;
@@ -25,7 +26,7 @@ global {
 	
 	float relaxation <- 1.0;
 	
-	geometry shape <- square(widthHeight);
+	geometry shape <- rectangle(spaceLength,spaceWidth);
 	
 	init { 
 		//Creation des personnes
@@ -49,7 +50,7 @@ species people skills:[moving] {
 	float Bi <- 1.0;
 	
 	//Sensibilité du champs de vision [0,1] => 0 -> 0° et 1 -> 360°
-	float lambda <- 0.6;
+	float lambda <- 0.5;
 	
 	// Destination
 	point aim ;
@@ -121,12 +122,12 @@ species people skills:[moving] {
 		shape <- circle(size);
 		if nd mod 2 = 0 { 
 			color <- #black;
-			location <- {widthHeight-rnd(widthHeight/2-1),rnd(widthHeight)};
+			location <- {spaceLength-rnd(spaceLength/2-1),rnd(spaceWidth-1)+1};
 			aim <- {0, location.y};
     	} else {
     		color <- #yellow;
-    		location <- {0+rnd(widthHeight/2-1),rnd(widthHeight)};
-    		aim <- {widthHeight, location.y};
+    		location <- {0+rnd(spaceLength/2-1),rnd(spaceWidth-1)+1};
+    		aim <- {spaceLength, location.y};
     	}
 		nd <- nd+1;
 		
@@ -136,9 +137,9 @@ species people skills:[moving] {
 	reflex sortie {
 		if abs(location.x - aim.x) < 1 {
 			if (aim.x = 0) {
-				location <- {widthHeight,rnd(widthHeight)};
+				location <- {spaceLength,rnd(spaceWidth-1)+1};
 			} else {
-				location <- {0,rnd(widthHeight)};
+				location <- {0,rnd(spaceWidth-1)+1};
 			}	
 		}
 	}
@@ -197,12 +198,12 @@ species people skills:[moving] {
 		float Locy;
 		
 		
-		if(location.x + actual_velocity.x >= 0-size and location.x + actual_velocity.x <= widthHeight+size) {
+		if(location.x + actual_velocity.x >= 0-size and location.x + actual_velocity.x <= spaceLength+size) {
 				Locx <- location.x + actual_velocity.x;
 			} else {
 				Locx <- location.x;
 			}
-		if( location.y + actual_velocity.y >= 0-size and location.y + actual_velocity.y <= widthHeight+size) {
+		if( location.y + actual_velocity.y >= 0-size and location.y + actual_velocity.y <= spaceWidth+size) {
 			Locy <- location.y + actual_velocity.y;
 		} else {
 			Locy <- location.y;
@@ -228,10 +229,10 @@ species wall {
 	  
 	init {
 		switch nbWalls {
-			match 0 {length <- widthHeight + 0.0; width <- 1.0;shape <- rectangle(length,width);location <- {widthHeight/2,0.5};}
-			match 1 {length <- widthHeight + 0.0; width <- 1.0;shape <- rectangle(length,width);location <- {widthHeight/2,widthHeight-0.5};}
-			match 2 {length <- 1.0; width <- widthHeight/2-1.0-bottleneckSize/2;shape <- rectangle(length,width);location <- {widthHeight/2.0,width/2+1};}
-			match 3 {length <- 1.0; width <- widthHeight/2-1.0-bottleneckSize/2;shape <- rectangle(length,width);location <- {widthHeight/2.0,widthHeight/2-1.0-bottleneckSize/2+bottleneckSize + width/2+1};}
+			match 0 {length <- spaceLength + 0.0; width <- 1.0;shape <- rectangle(length,width);location <- {spaceLength/2,0.5};}
+			match 1 {length <- spaceLength + 0.0; width <- 1.0;shape <- rectangle(length,width);location <- {spaceLength/2,spaceWidth-0.5};}
+			match 2 {length <- 1.0; width <- spaceWidth/2-1.0-bottleneckSize/2;shape <- rectangle(length,width);location <- {spaceLength/2.0,width/2+1};}
+			match 3 {length <- 1.0; width <- spaceWidth/2-1.0-bottleneckSize/2;shape <- rectangle(length,width);location <- {spaceLength/2.0,spaceWidth/2-1.0-bottleneckSize/2+bottleneckSize + width/2+1};}
 		}
 		nbWalls <- nbWalls +1;
 	}
@@ -244,7 +245,8 @@ species wall {
 
 experiment helbing type: gui {
 	parameter 'Nombre de personne' var: number_of_agents;
-	parameter 'Taille du terrain' var:widthHeight;
+	parameter 'Longeur du terrain' var:spaceLength;
+	parameter 'Largeur du terrain' var:spaceWidth; 
 	parameter 'Bottleneck size' var: bottleneckSize;
 	output {
 		display SocialForceModel{
