@@ -31,6 +31,12 @@ global
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
+	
+	//Body force coefficient
+	float body <- 1.0;
+	
+	//Fiction coefficient
+	float friction <- 1.0;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
@@ -128,8 +134,8 @@ species people
 					(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
 				
 				physic_interaction_force <- {
-					physic_interaction_force.x + theta * nij.x + theta * deltaVitesseTangencielle * tij.x,
-					physic_interaction_force.y + theta * nij.y + theta * deltaVitesseTangencielle * tij.y
+					physic_interaction_force.x + body * theta * nij.x + friction * theta * deltaVitesseTangencielle * tij.x,
+					physic_interaction_force.y + body * theta * nij.y + friction * theta * deltaVitesseTangencielle * tij.y
 				};
 				
 			}
@@ -200,6 +206,8 @@ species people
 
 		//Movement
 		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
+		
+		write agents_overlapping(self);
 	}
 
 	aspect default
