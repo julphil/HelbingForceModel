@@ -68,7 +68,6 @@ species people
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
 				float distance <- myself distance_to self;
 				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
-				//				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
 				float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
 				social_repulsion_force <- {
 				social_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
@@ -101,6 +100,44 @@ species people
 		return wall_repulsion_force;
 	}
 
+	point physic_interaction_force_function 
+	{
+		point physic_interaction_force  <- { 0.0, 0.0 };
+		
+		ask people
+		{
+			if (self != myself)
+			{
+				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
+				float distance <- myself distance_to self;
+				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
+				float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
+				
+				
+				float theta;
+				
+				if ((myself.size + size) - norm(distanceCenter) <= 0.0) {
+					theta <- 0.0;
+				} else {
+					theta <- (myself.size + size) - norm(distanceCenter);
+				}
+
+				point tij <- {-nij.y,nij.x};
+				
+				float deltaVitesseTangencielle <- 
+					(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
+				
+				physic_interaction_force <- {
+					physic_interaction_force.x + theta * nij.x + theta * deltaVitesseTangencielle * tij.x,
+					physic_interaction_force.y + theta * nij.y + theta * deltaVitesseTangencielle * tij.y
+				};
+				
+			}
+		}
+		
+		return physic_interaction_force; 	
+	}
+	
 	init
 	{
 		shape <- circle(size);
@@ -147,7 +184,7 @@ species people
 
 		// Sum of the forces
 		point force_sum <- {
-		goal_attraction_force.x + social_repulsion_force_function().x + wall_repulsion_force_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y
+		goal_attraction_force.x + social_repulsion_force_function().x + wall_repulsion_force_function().x + physic_interaction_force_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physic_interaction_force_function().y
 		};
 
 		// Acceleration
