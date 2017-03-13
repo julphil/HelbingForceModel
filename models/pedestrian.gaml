@@ -13,7 +13,7 @@ global
 
 	//space dimension
 	int spaceWidth min: 5 <- 30;
-	int spaceLength min: 5 <- 50;
+	int spaceLength min: 5 <-50;
 	int bottleneckSize min: 0 <- 10;
 
 	//incremental var use in species init
@@ -22,38 +22,42 @@ global
 
 	//Acceleration relaxation time
 	float relaxation <- 1.0;
-	
+
 	//Interaction strength
-	float Ai min:0.0 <- 5.0;
+	float Ai min: 0.0 <- 5.0;
 
 	//Range of the repulsive interactions
-	float Bi min:0.0 <- 2.0;
-	
+	float Bi min: 0.0 <- 2.0;
+
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
-	float lambda min:0.0 max:1.0 <- 0.5;
+	float lambda min: 0.0 max: 1.0 <- 0.5;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
 	init
 	{
 		create people number: number_of_agents;
-		create wall number: number_of_walls;
+		if bottleneckSize < spaceWidth {
+			create wall number: number_of_walls;
+			} else {
+			create wall number: number_of_walls-2;	
+		}
 	}
 
 }
 
-species people skills: [moving]
+species people
 {
 	rgb color;
 	float size <- 1.0;
-
-	
 
 	// Destination
 	point aim;
 	point desired_direction;
 	float desired_speed <- 2.0;
 	point actual_velocity <- { 0.0, 0, 0 };
+
+	//Force functions
 	point social_repulsion_force_function
 	{
 		point social_repulsion_force <- { 0.0, 0.0 };
@@ -64,8 +68,8 @@ species people skills: [moving]
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
 				float distance <- myself distance_to self;
 				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
-//				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
-				float phiij <- -nij.x * actual_velocity.x/(norm(actual_velocity)+0.0000001) + -nij.y * actual_velocity.x/(norm(actual_velocity)+0.0000001);
+				//				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
+				float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
 				social_repulsion_force <- {
 				social_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
 				};
@@ -103,13 +107,13 @@ species people skills: [moving]
 		if nd mod 2 = 0
 		{
 			color <- # black;
-			location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - 1 - size) + 1 + size };
+			location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 			aim <- { -size, location.y };
 		} else
 		{
 			color <- # yellow;
-			location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - 1 - size) + 1 + size };
-			aim <- { spaceLength+size, location.y };
+			location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+			aim <- { spaceLength + size, location.y };
 		}
 
 		nd <- nd + 1;
@@ -120,12 +124,12 @@ species people skills: [moving]
 
 	reflex sortie
 	{
-		if location.x >= spaceLength
+		if location.x >= spaceLength and color.green = 255
 		{
-			location <- { 0, rnd(spaceWidth - 1 - size) + 1 + size };
-		} else if location.x <= 0
+			location <- { 0, rnd(spaceWidth - (1 + size)*2) + 1 + size };
+		} else if location.x <= 0 and color.green = 0
 		{
-			location <- { spaceLength, rnd(spaceWidth - 1 - size) + 1 + size };
+			location <- { spaceLength, rnd(spaceWidth - (1 + size)*2) + 1 + size };
 		}
 
 	}
@@ -159,7 +163,6 @@ species people skills: [moving]
 
 		//Movement
 		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
-
 	}
 
 	aspect default
@@ -183,6 +186,7 @@ species wall
 				width <- 1.0;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2, 0.5 };
+				break;
 			}
 
 			match 1
@@ -191,6 +195,7 @@ species wall
 				width <- 1.0;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2, spaceWidth - 0.5 };
+				break;
 			}
 
 			match 2
@@ -199,6 +204,7 @@ species wall
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, width / 2 + 1 };
+				break;
 			}
 
 			match 3
@@ -207,6 +213,7 @@ species wall
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
+				break;
 			}
 
 		}
@@ -227,9 +234,9 @@ experiment helbing type: gui
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
 	parameter 'Bottleneck size' var: bottleneckSize;
-//	parameter 'Interaction strength' var: Ai;
-//	parameter 'Range of the repulsive interactions' var: Bi;
-//	parameter 'Peception' var: lambda;
+//		parameter 'Interaction strength' var: Ai;
+//		parameter 'Range of the repulsive interactions' var: Bi;
+//		parameter 'Peception' var: lambda;
 	output
 	{
 		display SocialForceModel
