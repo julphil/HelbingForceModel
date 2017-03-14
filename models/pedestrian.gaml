@@ -33,7 +33,7 @@ global
 	float lambda min: 0.0 max: 1.0 <- 0.5;
 	
 	//Body force coefficient
-	float body <- 1.0;
+	float body <- 10.0;
 	
 	//Fiction coefficient
 	float friction <- 1.0;
@@ -55,7 +55,7 @@ global
 species people
 {
 	rgb color;
-	float size <- 1.0;
+	float size <- 0.5;
 
 	// Destination
 	point aim;
@@ -93,11 +93,25 @@ species people
 			if (self != myself)
 			{
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float distance <- myself distance_to self;
+				float distance <- myself.location distance_to self - myself.size;
 				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
-				float phiij <- -nij.x * myself.desired_direction.x + -nij.y * myself.desired_direction.y;
+				
+				float theta;
+				
+				if (-distance <= 0.0) {
+					theta <- 0.0;
+				} else {
+					theta <- -distance;
+				}
+				
+				point tij <- {-nij.y,nij.x};
+				
+				float deltaVitesseTangencielle <- 
+					( myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
+				
 				wall_repulsion_force <- {
-				wall_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), wall_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
+					wall_repulsion_force.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
+					wall_repulsion_force.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
 				};
 			}
 
@@ -106,11 +120,11 @@ species people
 		return wall_repulsion_force;
 	}
 
-	point physic_interaction_force_function 
+	point physical_interaction_force_function 
 	{
-		point physic_interaction_force  <- { 0.0, 0.0 };
+		point physical_interaction_force  <- { 0.0, 0.0 };
 		
-		ask people
+		ask people parallel:true 
 		{
 			if (self != myself)
 			{
@@ -133,15 +147,15 @@ species people
 				float deltaVitesseTangencielle <- 
 					(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
 				
-				physic_interaction_force <- {
-					physic_interaction_force.x + body * theta * nij.x + friction * theta * deltaVitesseTangencielle * tij.x,
-					physic_interaction_force.y + body * theta * nij.y + friction * theta * deltaVitesseTangencielle * tij.y
+				physical_interaction_force <- {
+					physical_interaction_force.x + body * theta * nij.x + friction * theta * deltaVitesseTangencielle * tij.x,
+					physical_interaction_force.y + body * theta * nij.y + friction * theta * deltaVitesseTangencielle * tij.y
 				};
 				
 			}
 		}
 		
-		return physic_interaction_force; 	
+		return physical_interaction_force; 	
 	}
 	
 	init
@@ -190,7 +204,7 @@ species people
 
 		// Sum of the forces
 		point force_sum <- {
-		goal_attraction_force.x + social_repulsion_force_function().x + wall_repulsion_force_function().x + physic_interaction_force_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physic_interaction_force_function().y
+		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y
 		};
 
 		// Acceleration
@@ -264,6 +278,10 @@ species wall
 		}
 
 		nbWalls <- nbWalls + 1;
+	}
+	
+	reflex ecrire {
+		
 	}
 
 	aspect default
