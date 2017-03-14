@@ -12,22 +12,22 @@ global
 	int number_of_walls min: 0 <- 4;
 
 	//space dimension
-	int spaceWidth min: 5 <- 30;
+	int spaceWidth min: 5 <- 20;
 	int spaceLength min: 5 <-50;
-	int bottleneckSize min: 0 <- 10;
+	int bottleneckSize min: 0 <- 3;
 
 	//incremental var use in species init
 	int nd <- 0;
 	int nbWalls <- 0;
 
 	//Acceleration relaxation time
-	float relaxation <- 1.0;
+	float relaxation <- 2.0;
 
 	//Interaction strength
-	float Ai min: 0.0 <- 5.0;
+	float Ai min: 0.0 <- 3.0;
 
 	//Range of the repulsive interactions
-	float Bi min: 0.0 <- 2.0;
+	float Bi min: 0.0 <- 0.5;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
@@ -36,7 +36,7 @@ global
 	float body <- 10.0;
 	
 	//Fiction coefficient
-	float friction <- 1.0;
+	float friction <- 5.0;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
@@ -60,14 +60,14 @@ species people
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <- 2.0;
+	float desired_speed <- 1.34;
 	point actual_velocity <- { 0.0, 0, 0 };
 
 	//Force functions
 	point social_repulsion_force_function
 	{
 		point social_repulsion_force <- { 0.0, 0.0 };
-		ask people
+		ask people parallel:true
 		{
 			if (self != myself)
 			{
@@ -85,10 +85,10 @@ species people
 		return social_repulsion_force;
 	}
 
-	point wall_repulsion_force_function
+	point wall_repulsion_force_function 
 	{
 		point wall_repulsion_force <- { 0.0, 0.0 };
-		ask wall
+		ask wall parallel:true
 		{
 			if (self != myself)
 			{
@@ -297,9 +297,12 @@ experiment helbing type: gui
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
 	parameter 'Bottleneck size' var: bottleneckSize;
-//		parameter 'Interaction strength' var: Ai;
-//		parameter 'Range of the repulsive interactions' var: Bi;
-//		parameter 'Peception' var: lambda;
+	parameter 'Interaction strength' var: Ai;
+	parameter 'Range of the repulsive interactions' var: Bi;
+	parameter 'Peception' var: lambda;
+	parameter 'Body contact strength' var: body;
+	parameter 'Body friction' var: friction;
+	
 	output
 	{
 		display SocialForceModel
