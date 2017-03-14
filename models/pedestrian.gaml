@@ -56,6 +56,7 @@ species people
 {
 	rgb color;
 	float size <- 0.5;
+	int group;
 
 	// Destination
 	point aim;
@@ -165,12 +166,14 @@ species people
 		{
 			color <- # black;
 			location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			aim <- { -size, location.y };
+			aim <- { spaceLength/2 -5, spaceWidth/2};
+			group <- 0;
 		} else
 		{
 			color <- # yellow;
 			location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			aim <- { spaceLength + size, location.y };
+			aim <- { spaceLength + 5, spaceWidth/2 };
+			group <- 1;
 		}
 
 		nd <- nd + 1;
@@ -181,19 +184,29 @@ species people
 
 	reflex sortie
 	{
-		if location.x >= spaceLength and color.green = 255
+		if location.x >= spaceLength and group = 1
 		{
 			location <- { 0, rnd(spaceWidth - (1 + size)*2) + 1 + size };
-		} else if location.x <= 0 and color.green = 0
+			aim <- { spaceLength + 5, spaceWidth/2 };
+		} else if location.x <= 0 and group = 0
 		{
 			location <- { spaceLength, rnd(spaceWidth - (1 + size)*2) + 1 + size };
+			aim <- { spaceLength/2 -5, spaceWidth/2};
 		}
 
 	}
 
 	reflex step
 	{
-		aim <- { aim.x, location.y };
+		if((group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) {
+			aim <- {spaceLength*group,location.y};
+		} else if (location.y < spaceWidth/2 - bottleneckSize/2 ) {
+			aim <- {aim.x,spaceWidth/2 - bottleneckSize/2 + 1};
+		} else if (location.y > spaceWidth/2 + bottleneckSize/2 ) {
+			aim <- {aim.x,spaceWidth/2 + bottleneckSize/2 - 1};
+		} else {
+			aim <- {aim.x,location.y};
+		}
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
