@@ -8,7 +8,7 @@ model socialForceModel
 
 global
 {
-	int number_of_agents min: 1 <- 2;
+	int number_of_agents min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 
 	//space dimension
@@ -127,7 +127,7 @@ species people
 		
 		ask people parallel:true 
 		{
-			if (self != myself)
+			if (self distance_to myself <= size and self != myself)
 			{
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
 				float distance <- myself distance_to self;
@@ -234,7 +234,6 @@ species people
 		//Movement
 		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
 		
-		write agents_overlapping(self);
 	}
 
 	aspect default
