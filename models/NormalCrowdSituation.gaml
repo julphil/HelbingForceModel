@@ -1,9 +1,9 @@
 /**
-* Name: pedestrian
+* Name: NormalCrowdSituation
 * Author: Julien Philippe
 * Description:  Implementation of Helbing social force model
 */
-model socialForceModel
+model NormalCrowdSituation
 
 
 global
@@ -12,9 +12,9 @@ global
 	int number_of_walls min: 0 <- 4;
 
 	//space dimension
-	int spaceWidth min: 5 <- 20;
+	int spaceWidth min: 5 <- 8;
 	int spaceLength min: 5 <-50;
-	int bottleneckSize min: 0 <- 3;
+	int bottleneckSize min: 0 <- 30;
 
 	//incremental var use in species init
 	int nd <- 0;
@@ -33,7 +33,7 @@ global
 	float lambda min: 0.0 max: 1.0 <- 0.5;
 	
 	//Body force coefficient
-	float body <- 10.0;
+	float body <- 100.0;
 	
 	//Fiction coefficient
 	float friction <- 5.0;
@@ -94,8 +94,10 @@ species people
 			if (self != myself)
 			{
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float distance <- myself.location distance_to self - myself.size;
-				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
+				float distance <- myself.location distance_to self.shape.contour - myself.size;
+				point wallClosestPoint <- closest_points_with(myself ,self.shape.contour)[1];
+				point nij <- { (myself.location.x - wallClosestPoint.x) / norm(distanceCenter), (myself.location.y - wallClosestPoint.y) / norm(distanceCenter) };
+				
 				
 				float theta;
 				
@@ -105,10 +107,15 @@ species people
 					theta <- -distance;
 				}
 				
+				if (myself.location overlaps self or self overlaps myself.location) {
+					write theta;
+					nij <- {-nij.x,-nij.y};
+				}
+				
 				point tij <- {-nij.y,nij.x};
 				
-				float deltaVitesseTangencielle <- 
-					( myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
+				float deltaVitesseTangencielle <- 0.0;
+//					( myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
 				
 				wall_repulsion_force <- {
 					wall_repulsion_force.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
@@ -303,7 +310,7 @@ species wall
 
 }
 
-experiment helbing type: gui
+experiment helbingNormal type: gui
 {
 	parameter 'Pedestrian number' var: number_of_agents;
 	parameter 'Space length' var: spaceLength;
