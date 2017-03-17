@@ -1,10 +1,10 @@
 /**
 * Name: NormalCrowdSituation
 * Author: Julien Philippe
-* Description:  Implementation of Helbing social force model
+* Description:  Implementation of Helbing social force model in escape panic situation.
 */
-model NormalCrowdSituation
 
+model EscapeCrowdSituation
 
 global
 {
@@ -12,7 +12,7 @@ global
 	int number_of_walls min: 0 <- 4;
 
 	//space dimension
-	int spaceWidth min: 5 <- 8;
+	int spaceWidth min: 5 <- 7;
 	int spaceLength min: 5 <-50;
 	int bottleneckSize min: 0 <- 30;
 
@@ -33,15 +33,22 @@ global
 	float lambda min: 0.0 max: 1.0 <- 0.5;
 	
 	//Body force coefficient
-	float body <- 100.0;
+	float body <- 1000.0;
 	
 	//Fiction coefficient
 	float friction <- 5.0;
+	
+	float maxAcc <- 0.0;
+	float meanAcc <- 0.0;
+	int nbFor <- 0;
+	
+
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
 	init
 	{
+		
 		create people number: number_of_agents;
 		if bottleneckSize < spaceWidth {
 			create wall number: number_of_walls;
@@ -49,7 +56,7 @@ global
 			create wall number: number_of_walls-2;	
 		}
 	}
-
+		
 }
 
 species people
@@ -57,12 +64,17 @@ species people
 	rgb color;
 	float size <- 0.5;
 	int group;
+	float nervousness <- 1.0;
 
 	// Destination
 	point aim;
 	point desired_direction;
 	float desired_speed <- 1.34;
 	point actual_velocity <- { 0.0, 0, 0 };
+	
+	//Fluctuations
+	point normal_fluctuation;
+	point maximum_fluctuation;
 
 	//Force functions
 	point social_repulsion_force_function
@@ -166,6 +178,12 @@ species people
 		return physical_interaction_force; 	
 	}
 	
+	point fluctuation_term_function
+	{
+		point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
+		return fluctuation_term;
+	}
+	
 	init
 	{
 		shape <- circle(size);
@@ -187,6 +205,13 @@ species people
 		desired_direction <- {
 		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
 		};
+		
+		normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
+		maximum_fluctuation <- {0,0};
+		
+		loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation)) {
+			maximum_fluctuation <- { gauss(0,0.3),gauss(0,0.3)};	
+		}
 	}
 
 	reflex sortie
@@ -224,7 +249,7 @@ species people
 
 		// Sum of the forces
 		point force_sum <- {
-		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y
+		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x + fluctuation_term_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y + fluctuation_term_function().y
 		};
 
 		// Acceleration
@@ -298,10 +323,6 @@ species wall
 
 		nbWalls <- nbWalls + 1;
 	}
-	
-	reflex ecrire {
-		
-	}
 
 	aspect default
 	{
@@ -310,17 +331,17 @@ species wall
 
 }
 
-experiment helbingNormal type: gui
+experiment helbingPanic type: gui
 {
 	parameter 'Pedestrian number' var: number_of_agents;
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
 	parameter 'Bottleneck size' var: bottleneckSize;
-	parameter 'Interaction strength' var: Ai;
-	parameter 'Range of the repulsive interactions' var: Bi;
-	parameter 'Peception' var: lambda;
-	parameter 'Body contact strength' var: body;
-	parameter 'Body friction' var: friction;
+//	parameter 'Interaction strength' var: Ai;
+//	parameter 'Range of the repulsive interactions' var: Bi;
+//	parameter 'Peception' var: lambda;
+//	parameter 'Body contact strength' var: body;
+//	parameter 'Body friction' var: friction;
 	
 	output
 	{
@@ -333,3 +354,4 @@ experiment helbingNormal type: gui
 	}
 
 }
+
