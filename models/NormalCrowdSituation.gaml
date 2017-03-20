@@ -12,7 +12,7 @@ global
 	int number_of_walls min: 0 <- 4;
 
 	//space dimension
-	int spaceWidth min: 5 <- 8;
+	int spaceWidth min: 5 <- 7;
 	int spaceLength min: 5 <-50;
 	int bottleneckSize min: 0 <- 30;
 
@@ -27,7 +27,7 @@ global
 	float Ai min: 0.0 <- 3.0;
 
 	//Range of the repulsive interactions
-	float Bi min: 0.0 <- 0.5;
+	float Bi min: 0.0 <- 1.0;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
@@ -48,6 +48,10 @@ global
 			} else {
 			create wall number: number_of_walls-2;	
 		}
+	}
+	
+	reflex sat {
+		write "";
 	}
 
 }
@@ -93,24 +97,19 @@ species people
 		{
 			if (self != myself)
 			{
-				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float distance <- myself.location distance_to self.shape.contour - myself.size;
 				point wallClosestPoint <- closest_points_with(myself ,self.shape.contour)[1];
-				point nij <- { (myself.location.x - wallClosestPoint.x) / norm(distanceCenter), (myself.location.y - wallClosestPoint.y) / norm(distanceCenter) };
+				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y });
+				point nij <- { (myself.location.x - wallClosestPoint.x) / distance, (myself.location.y - wallClosestPoint.y) / distance};
 				
 				
 				float theta;
 				
-				if (-distance <= 0.0) {
-					theta <- 0.0;
-				} else {
+				if (distance-myself.size <= 0.0 or myself.location overlaps self or self overlaps myself.location) {
 					theta <- -distance;
+				} else {
+					theta <- 0.0;
 				}
 				
-				if (myself.location overlaps self or self overlaps myself.location) {
-					write theta;
-					nij <- {-nij.x,-nij.y};
-				}
 				
 				point tij <- {-nij.y,nij.x};
 				
@@ -122,7 +121,6 @@ species people
 					wall_repulsion_force.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
 				};
 			}
-
 		}
 
 		return wall_repulsion_force;
@@ -193,12 +191,19 @@ species people
 	{
 		if location.x >= spaceLength and group = 1
 		{
-			location <- { 0, rnd(spaceWidth - (1 + size)*2) + 1 + size };
+			location <- { 0, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
 			aim <- { spaceLength + 5, spaceWidth/2 };
 		} else if location.x <= 0 and group = 0
 		{
-			location <- { spaceLength, rnd(spaceWidth - (1 + size)*2) + 1 + size };
+			location <- { spaceLength, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
 			aim <- { spaceLength/2 -5, spaceWidth/2};
+		}
+		if location.y < 0 
+		{
+			location <- {location.x, 0.0};
+		} else if location.y > spaceWidth 
+		{
+			location <- {location.x,spaceWidth};
 		}
 
 	}
@@ -211,9 +216,16 @@ species people
 			aim <- {aim.x,spaceWidth/2 - bottleneckSize/2 + 1};
 		} else if (location.y > spaceWidth/2 + bottleneckSize/2 ) {
 			aim <- {aim.x,spaceWidth/2 + bottleneckSize/2 - 1};
+		} else if location.y <=1 {
+			aim <- {aim.x,1};
+			actual_velocity <- {0.0,0.0};
+		} else if location.y >= spaceWidth -1 {
+			aim <- {aim.x,spaceWidth -1};
+			actual_velocity <- {0.0,0.0};
 		} else {
 			aim <- {aim.x,location.y};
 		}
+		
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
@@ -240,7 +252,6 @@ species people
 
 		//Movement
 		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
-		
 	}
 
 	aspect default
@@ -260,19 +271,19 @@ species wall
 		{
 			match 0
 			{
-				length <- spaceLength + 0.0;
-				width <- 1.0;
+				length <- spaceLength + 10.0;
+				width <- 100.0;
 				shape <- rectangle(length, width);
-				location <- { spaceLength / 2, 0.5 };
+				location <- { spaceLength / 2, -49.0 };
 				break;
 			}
 
 			match 1
 			{
-				length <- spaceLength + 0.0;
-				width <- 1.0;
+				length <- spaceLength + 10.0;
+				width <- 100.0;
 				shape <- rectangle(length, width);
-				location <- { spaceLength / 2, spaceWidth - 0.5 };
+				location <- { spaceLength / 2, spaceWidth - (-49.0) };
 				break;
 			}
 
