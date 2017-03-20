@@ -27,28 +27,21 @@ global
 	float Ai min: 0.0 <- 3.0;
 
 	//Range of the repulsive interactions
-	float Bi min: 0.0 <- 0.5;
+	float Bi min: 0.0 <- 1.0;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
 	
 	//Body force coefficient
-	float body <- 1000.0;
+	float body <- 100.0;
 	
 	//Fiction coefficient
 	float friction <- 5.0;
-	
-	float maxAcc <- 0.0;
-	float meanAcc <- 0.0;
-	int nbFor <- 0;
-	
-
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
 	init
 	{
-		
 		create people number: number_of_agents;
 		if bottleneckSize < spaceWidth {
 			create wall number: number_of_walls;
@@ -56,7 +49,11 @@ global
 			create wall number: number_of_walls-2;	
 		}
 	}
-		
+	
+	reflex sat {
+		write "";
+	}
+
 }
 
 species people
@@ -65,6 +62,7 @@ species people
 	float size <- 0.5;
 	int group;
 	float nervousness <- 1.0;
+	
 
 	// Destination
 	point aim;
@@ -73,8 +71,10 @@ species people
 	point actual_velocity <- { 0.0, 0, 0 };
 	
 	//Fluctuations
-	point normal_fluctuation;
-	point maximum_fluctuation;
+    point normal_fluctuation;
+    point maximum_fluctuation;
+ 
+	
 
 	//Force functions
 	point social_repulsion_force_function
@@ -173,10 +173,11 @@ species people
 	}
 	
 	point fluctuation_term_function
-	{
-		point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
-		return fluctuation_term;
-	}
+   {
+	   point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
+	   return fluctuation_term;
+   }
+	
 	
 	init
 	{
@@ -200,12 +201,14 @@ species people
 		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
 		};
 		
-		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
-		maximum_fluctuation <- {0,0};
-		
-		loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation)) {
-			maximum_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};	
+       normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
+       maximum_fluctuation <- {0,0};
+              
+       loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+	   {
+			maximum_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};    
 		}
+		
 	}
 
 	reflex sortie
@@ -246,6 +249,7 @@ species people
 		} else {
 			aim <- {aim.x,location.y};
 		}
+		
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
@@ -256,7 +260,7 @@ species people
 
 		// Sum of the forces
 		point force_sum <- {
-		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x + fluctuation_term_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y + fluctuation_term_function().y
+		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y
 		};
 
 		// Acceleration
@@ -272,7 +276,6 @@ species people
 
 		//Movement
 		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
-		
 	}
 
 	aspect default
@@ -292,19 +295,19 @@ species wall
 		{
 			match 0
 			{
-				length <- spaceLength + 0.0;
-				width <- 1.0;
+				length <- spaceLength + 10.0;
+				width <- 100.0;
 				shape <- rectangle(length, width);
-				location <- { spaceLength / 2, 0.5 };
+				location <- { spaceLength / 2, -49.0 };
 				break;
 			}
 
 			match 1
 			{
-				length <- spaceLength + 0.0;
-				width <- 1.0;
+				length <- spaceLength + 10.0;
+				width <- 100.0;
 				shape <- rectangle(length, width);
-				location <- { spaceLength / 2, spaceWidth - 0.5 };
+				location <- { spaceLength / 2, spaceWidth - (-49.0) };
 				break;
 			}
 
@@ -329,6 +332,10 @@ species wall
 		}
 
 		nbWalls <- nbWalls + 1;
+	}
+	
+	reflex ecrire {
+		
 	}
 
 	aspect default
