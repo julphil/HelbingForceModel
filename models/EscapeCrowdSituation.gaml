@@ -10,6 +10,8 @@ global
 {
 	int number_of_agents min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
+	
+	bool isDifferentGroup <- true; 
 
 	//space dimension
 	int spaceWidth min: 5 <- 9;
@@ -61,7 +63,7 @@ species people
 	rgb color;
 	float size <- 0.5;
 	int group;
-	float nervousness <- 1.0;
+	float nervousness <- 0.0;
 	
 
 	// Destination
@@ -188,7 +190,7 @@ species people
 	init
 	{
 		shape <- circle(size);
-		if nd mod 2 = 0
+		if nd mod 2 = 0 or !isDifferentGroup
 		{
 			color <- # black;
 			location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
@@ -340,9 +342,6 @@ species wall
 		nbWalls <- nbWalls + 1;
 	}
 	
-	reflex ecrire {
-		
-	}
 
 	aspect default
 	{
@@ -353,15 +352,16 @@ species wall
 
 experiment helbingPanic type: gui
 {
+	parameter 'Is Different group ?' var: isDifferentGroup;
 	parameter 'Pedestrian number' var: number_of_agents;
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
 	parameter 'Bottleneck size' var: bottleneckSize;
-//	parameter 'Interaction strength' var: Ai;
-//	parameter 'Range of the repulsive interactions' var: Bi;
-//	parameter 'Peception' var: lambda;
-//	parameter 'Body contact strength' var: body;
-//	parameter 'Body friction' var: friction;
+	parameter 'Interaction strength' var: Ai;
+	parameter 'Range of the repulsive interactions' var: Bi;
+	parameter 'Peception' var: lambda;
+	parameter 'Body contact strength' var: body;
+	parameter 'Body friction' var: friction;
 	
 	output
 	{

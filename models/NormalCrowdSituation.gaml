@@ -10,6 +10,7 @@ global
 {
 	int number_of_agents min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
+	bool isDifferentGroup <- true; 
 
 	//space dimension
 	int spaceWidth min: 5 <- 7;
@@ -173,7 +174,7 @@ species people
 	init
 	{
 		shape <- circle(size);
-		if nd mod 2 = 0
+		if nd mod 2 = 0 or !isDifferentGroup
 		{
 			color <- # black;
 			location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
@@ -329,6 +330,7 @@ species wall
 
 experiment helbingNormal type: gui
 {
+	parameter 'Is Different group ?' var: isDifferentGroup;
 	parameter 'Pedestrian number' var: number_of_agents;
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
