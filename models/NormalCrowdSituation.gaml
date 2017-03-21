@@ -97,7 +97,7 @@ species people
 		{
 			if (self != myself)
 			{
-				point wallClosestPoint <- closest_points_with(myself ,self.shape.contour)[1];
+				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
 				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y });
 				point nij <- { (myself.location.x - wallClosestPoint.x) / distance, (myself.location.y - wallClosestPoint.y) / distance};
 				
@@ -105,8 +105,14 @@ species people
 				float theta;
 				
 				if (distance-myself.size <= 0.0 or myself.location overlaps self or self overlaps myself.location) {
-					theta <- -distance;
-				} else {
+					theta <- myself.size-distance;
+
+					if(distance-myself.size <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
+					{
+						nij <- {nij.x,-nij.y};
+					}
+				}
+				else {
 					theta <- 0.0;
 				}
 				
@@ -122,7 +128,7 @@ species people
 				};
 			}
 		}
-
+		
 		return wall_repulsion_force;
 	}
 

@@ -12,7 +12,7 @@ global
 	int number_of_walls min: 0 <- 4;
 
 	//space dimension
-	int spaceWidth min: 5 <- 7;
+	int spaceWidth min: 5 <- 9;
 	int spaceLength min: 5 <-50;
 	int bottleneckSize min: 0 <- 30;
 
@@ -50,7 +50,7 @@ global
 		}
 	}
 	
-	reflex sat {
+	reflex stepConsole {
 		write "";
 	}
 
@@ -67,7 +67,7 @@ species people
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <- 1.34;
+	float desired_speed <- 0.5;
 	point actual_velocity <- { 0.0, 0, 0 };
 	
 	//Fluctuations
@@ -105,7 +105,7 @@ species people
 		{
 			if (self != myself)
 			{
-				point wallClosestPoint <- closest_points_with(myself ,self.shape.contour)[1];
+				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
 				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y });
 				point nij <- { (myself.location.x - wallClosestPoint.x) / distance, (myself.location.y - wallClosestPoint.y) / distance};
 				
@@ -113,8 +113,14 @@ species people
 				float theta;
 				
 				if (distance-myself.size <= 0.0 or myself.location overlaps self or self overlaps myself.location) {
-					theta <- -distance;
-				} else {
+					theta <- myself.size-distance;
+
+					if(distance-myself.size <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
+					{
+						nij <- {nij.x,-nij.y};
+					}
+				}
+				else {
 					theta <- 0.0;
 				}
 				
@@ -130,7 +136,7 @@ species people
 				};
 			}
 		}
-
+		
 		return wall_repulsion_force;
 	}
 
@@ -260,7 +266,7 @@ species people
 
 		// Sum of the forces
 		point force_sum <- {
-		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y
+		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x + fluctuation_term_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y + fluctuation_term_function().y
 		};
 
 		// Acceleration
