@@ -11,12 +11,13 @@ global
 	int number_of_agents min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 	
-	bool isDifferentGroup <- true; 
+	bool isDifferentGroup <- false; 
+	bool isRespawn <- false;
 
 	//space dimension
-	int spaceWidth min: 5 <- 9;
+	int spaceWidth min: 5 <- 20;
 	int spaceLength min: 5 <-50;
-	int bottleneckSize min: 0 <- 30;
+	int bottleneckSize min: 0 <- 4;
 
 	//incremental var use in species init
 	int nd <- 0;
@@ -29,7 +30,7 @@ global
 	float Ai min: 0.0 <- 3.0;
 
 	//Range of the repulsive interactions
-	float Bi min: 0.0 <- 1.0;
+	float Bi min: 0.0 <- 0.2;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
@@ -52,8 +53,11 @@ global
 		}
 	}
 	
-	reflex stepConsole {
-		write "";
+	reflex stopIt {
+		if length(people) <= 0
+		{
+			do pause;
+		}
 	}
 
 }
@@ -63,13 +67,13 @@ species people
 	rgb color;
 	float size <- 0.5;
 	int group;
-	float nervousness <- 0.0;
+	float nervousness <- 1.0;
 	
 
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <- 0.5;
+	float desired_speed <- 0.75;
 	point actual_velocity <- { 0.0, 0, 0 };
 	
 	//Fluctuations
@@ -221,15 +225,23 @@ species people
 
 	reflex sortie
 	{
-		if location.x >= spaceLength and group = 1
+		if isRespawn 
 		{
-			location <- { 0, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			aim <- { spaceLength + 5, spaceWidth/2 };
-		} else if location.x <= 0 and group = 0
-		{
-			location <- { spaceLength, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			aim <- { spaceLength/2 -5, spaceWidth/2};
+			if location.x >= spaceLength and group = 1
+			{
+				location <- { 0, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				aim <- { spaceLength + 5, spaceWidth/2 };
+			} else if location.x <= 0 and group = 0
+			{
+				location <- { spaceLength, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				aim <- { spaceLength/2 -5, spaceWidth/2};
+			}
 		}
+		else if (location.x >= spaceLength and group = 1) or (location.x <= 0 and group = 0)
+		{
+			do die;
+		}
+		
 		if location.y < 0 
 		{
 			location <- {location.x, 0.0};
@@ -321,7 +333,7 @@ species wall
 
 			match 2
 			{
-				length <- 1.0;
+				length <- 3.0;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, width / 2 + 1 };
@@ -330,7 +342,7 @@ species wall
 
 			match 3
 			{
-				length <- 1.0;
+				length <- 3.0;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
@@ -353,6 +365,7 @@ species wall
 experiment helbingPanic type: gui
 {
 	parameter 'Is Different group ?' var: isDifferentGroup;
+	parameter 'Respawn' var: isRespawn;
 	parameter 'Pedestrian number' var: number_of_agents;
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
@@ -370,7 +383,12 @@ experiment helbingPanic type: gui
 			species people;
 			species wall;
 		}
-
+		display SocialForceModel_NBPeople
+		{
+			chart "Number of peoples still inside " {
+				data "nb_people" value: length(people);
+			}
+		}
 	}
 
 }
