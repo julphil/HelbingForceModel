@@ -271,6 +271,16 @@ species people
 
 		//Movement
 		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
+		
+		write name;
+		write "\tlocation : " + location;
+		write "\taim : " + aim;
+		write "\tforce : " + force_sum;
+		write "\t\tgoal force : " + goal_attraction_force;
+		write "\t\tsocial force : " + social_repulsion_force_function();
+		write "\t\twall force : " + wall_repulsion_force_function();
+		write "\t\tphysical force : " + physical_interaction_force_function();
+		write "";
 	}
 
 	aspect default

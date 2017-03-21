@@ -30,7 +30,7 @@ global
 	float Ai min: 0.0 <- 3.0;
 
 	//Range of the repulsive interactions
-	float Bi min: 0.0 <- 0.2;
+	float Bi min: 0.0 <- 1.0;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
@@ -73,7 +73,7 @@ species people
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <- 0.75;
+	float desired_speed <- 1.34;
 	point actual_velocity <- { 0.0, 0, 0 };
 	
 	//Fluctuations
@@ -186,6 +186,14 @@ species people
 	
 	point fluctuation_term_function
    {
+   		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
+       maximum_fluctuation <- {0,0};
+              
+       loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+	   {
+			maximum_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};    
+		}
+   	
 	   point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
 	   return fluctuation_term;
    }
@@ -296,6 +304,18 @@ species people
 
 		//Movement
 		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
+		
+		write name;
+		write "\tlocation : " + location;
+		write "\taim : " + aim;
+		write "\tforce : " + force_sum;
+		write "\t\tgoal force : " + goal_attraction_force;
+		write "\t\tsocial force : " + social_repulsion_force_function();
+		write "\t\twall force : " + wall_repulsion_force_function();
+		write "\t\tphysical force : " + physical_interaction_force_function();
+		write "\t\tfluctuation force : " + fluctuation_term_function();
+		write "\t\t\tfluctoation max : " + maximum_fluctuation;
+		write "";
 	}
 
 	aspect default
