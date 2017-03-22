@@ -67,21 +67,23 @@ species people
 	rgb color;
 	float size <- 0.5;
 	int group;
-	float nervousness <- 1.0;
+	float nervousness <- 0.0;
 	
 
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <- 1.34;
+	float desired_speed <- 0.5;
 	point actual_velocity <- { 0.0, 0, 0 };
 	
 	//Fluctuations
     point normal_fluctuation;
     point maximum_fluctuation;
+    
+    float lastDistanceToAim;
+    
+    float cumuledOrientedSpeed;
  
-	
-
 	//Force functions
 	point social_repulsion_force_function
 	{
@@ -278,6 +280,8 @@ species people
 			aim <- {aim.x,location.y};
 		}
 		
+		lastDistanceToAim <- self.location distance_to aim;
+		
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
@@ -305,17 +309,8 @@ species people
 		//Movement
 		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
 		
-		write name;
-		write "\tlocation : " + location;
-		write "\taim : " + aim;
-		write "\tforce : " + force_sum;
-		write "\t\tgoal force : " + goal_attraction_force;
-		write "\t\tsocial force : " + social_repulsion_force_function();
-		write "\t\twall force : " + wall_repulsion_force_function();
-		write "\t\tphysical force : " + physical_interaction_force_function();
-		write "\t\tfluctuation force : " + fluctuation_term_function();
-		write "\t\t\tfluctoation max : " + maximum_fluctuation;
-		write "";
+		cumuledOrientedSpeed <- cumuledOrientedSpeed + (lastDistanceToAim - (self.location distance_to aim));
+		nervousness <- 1-((cumuledOrientedSpeed/(cycle+1))/desired_speed);
 	}
 
 	aspect default
@@ -407,6 +402,11 @@ experiment helbingPanic type: gui
 		{
 			chart "Number of peoples still inside " {
 				data "nb_people" value: length(people);
+				
+			}
+			
+			chart "Number of peoples still inside " {
+				data "global nervoussness" value: mean(people collect each.nervousness);
 			}
 		}
 	}
