@@ -13,14 +13,14 @@ global
 	int number_of_agents min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 	
-	bool isDifferentGroup <- false; 
-	bool isRespawn <- false;
-	bool isFluctuation  <- true;
+	bool isDifferentGroup <- true; 
+	bool isRespawn <- true;
+	bool isFluctuation  <- false;
 
 	//space dimension
-	int spaceWidth min: 2 <- 20;
-	int spaceLength min: 5 <-50;
-	int bottleneckSize min: 0 <- 4;
+	int spaceWidth min: 2 <- 6;
+	int spaceLength min: 5 <-30;
+	int bottleneckSize min: 0 <- 10;
 
 	//incremental var use in species init
 	int nd <- 0;
@@ -30,10 +30,10 @@ global
 	float relaxation <- 2.0;
 
 	//Interaction strength
-	float Ai min: 0.0 <- 3.0;
+	float Ai min: 0.0 <- 1.0;
 
 	//Range of the repulsive interactions
-	float Bi min: 0.0 <- 1.0;
+	float Bi min: 0.0 <- 0.5;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
@@ -195,12 +195,12 @@ species people
    {
    		if !isFluctuation {return {0.0,0.0};}
    	
-   		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
+   		normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
        maximum_fluctuation <- {0,0};
               
        loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 	   {
-			maximum_fluctuation <- { gauss(0,0.5),gauss(0,0.5)};    
+			maximum_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};    
 		}
    		   	
 	   point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
@@ -306,7 +306,7 @@ species people
 		point force_sum <- {
 		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x + fluctuation_term_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y + fluctuation_term_function().y
 		};
-
+		
 		// Acceleration
 		float norme_sum <- norm(force_sum);
 		float max_velocity <- 1.3 * desired_speed;
@@ -315,7 +315,7 @@ species people
 			actual_velocity <- { actual_velocity.x + force_sum.x, actual_velocity.y + force_sum.y };
 		} else
 		{
-			actual_velocity <- { force_sum.x * (max_velocity / norme_sum), force_sum.y * (max_velocity / norme_sum) };
+			actual_velocity <- { force_sum.x * (max_velocity/ norme_sum), force_sum.y * (max_velocity / norme_sum) };
 		}
 
 		//Movement
