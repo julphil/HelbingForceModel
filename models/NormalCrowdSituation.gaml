@@ -8,6 +8,8 @@ model NormalCrowdSituation
 
 global
 {
+	float deltaT min: 0.01 max: 1.0 <- 0.1;
+	
 	int number_of_agents min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 	bool isDifferentGroup <- false; 
@@ -270,7 +272,7 @@ species people
 		}
 
 		//Movement
-		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
+		location <- { location.x + actual_velocity.x*deltaT, location.y + actual_velocity.y*deltaT };
 		
 		write name;
 		write "\tlocation : " + location;
@@ -352,6 +354,7 @@ species wall
 
 experiment helbingNormal type: gui
 {
+	parameter 'Delta T' var: deltaT;
 	parameter 'Is Different group ?' var: isDifferentGroup;
 	parameter 'Respawn' var: isRespawn;
 	parameter 'Pedestrian number' var: number_of_agents;

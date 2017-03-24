@@ -8,14 +8,17 @@ model EscapeCrowdSituation
 
 global
 {
+	float deltaT min: 0.01 max: 1.0 <- 0.1;
+	
 	int number_of_agents min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 	
 	bool isDifferentGroup <- false; 
 	bool isRespawn <- false;
+	bool isFluctuation  <- true;
 
 	//space dimension
-	int spaceWidth min: 5 <- 20;
+	int spaceWidth min: 2 <- 20;
 	int spaceLength min: 5 <-50;
 	int bottleneckSize min: 0 <- 4;
 
@@ -54,6 +57,7 @@ global
 	}
 	
 	reflex stopIt {
+		write time;
 		if length(people) <= 0
 		{
 			do pause;
@@ -73,7 +77,7 @@ species people
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <- 1.0;
+	float desired_speed <- 1.34;
 	point actual_velocity <- { 0.0, 0, 0 };
 	
 	//Fluctuations
@@ -189,14 +193,16 @@ species people
 	
 	point fluctuation_term_function
    {
+   		if !isFluctuation {return {0.0,0.0};}
+   	
    		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
        maximum_fluctuation <- {0,0};
               
        loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 	   {
-			maximum_fluctuation <- { gauss(0,0.2),gauss(0,0.2)};    
+			maximum_fluctuation <- { gauss(0,0.5),gauss(0,0.5)};    
 		}
-   	
+   		   	
 	   point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
 	   return fluctuation_term;
    }
@@ -269,6 +275,7 @@ species people
 
 	reflex step
 	{
+		
 		if((group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) {
 			aim <- {spaceLength*group,location.y};
 		} else if (location.y < spaceWidth/2 - bottleneckSize/2 ) {
@@ -312,11 +319,12 @@ species people
 		}
 
 		//Movement
-		location <- { location.x + actual_velocity.x, location.y + actual_velocity.y };
+		location <- { location.x + actual_velocity.x*deltaT, location.y + actual_velocity.y*deltaT };
 		
 		cumuledOrientedSpeed <- cumuledOrientedSpeed + (lastDistanceToAim - (self.location distance_to aim));
 		presenceTime <- presenceTime  + 1;
-		nervousness <- 1-((cumuledOrientedSpeed/(presenceTime))/desired_speed);
+		nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speed);
+		
 	}
 
 	aspect default
@@ -354,7 +362,7 @@ species wall
 
 			match 2
 			{
-				length <- 3.0;
+				length <- 1.0;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, width / 2 + 1 };
@@ -363,7 +371,7 @@ species wall
 
 			match 3
 			{
-				length <- 3.0;
+				length <- 1.0;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
@@ -385,8 +393,10 @@ species wall
 
 experiment helbingPanic type: gui
 {
+	parameter 'Delta T' var: deltaT;
 	parameter 'Is Different group ?' var: isDifferentGroup;
 	parameter 'Respawn' var: isRespawn;
+	parameter 'Fluctuation' var: isFluctuation;
 	parameter 'Pedestrian number' var: number_of_agents;
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
