@@ -1,0 +1,10 @@
+#
+#Sun Mar 26 11:29:58 CEST 2017
+operators=-~rectangle~as~point~\!\=~distance_to~/~norm~+~*~exp~internal_at~closest_points_with~.~or~<\=~overlaps~and~\!~gauss~<~circle~\=~mod~rnd~abs~sqrt~>\=~>~rgb~length~mean~collect
+plugins=msi.gama.core
+attributes=x~y~contour
+statements=action~let~ask~if~set~return~else~loop~init~reflex~do~aspect~draw~switch~match~break~create~write~output~display~display_population~chart~data
+skills=reflex
+constants=yellow~black
+types=string~list~int~unknown~float~geometry~point~agent~rgb~bool~date~container
+actions=debug~error~tell~write~die~_init_~_step_~halt~pause

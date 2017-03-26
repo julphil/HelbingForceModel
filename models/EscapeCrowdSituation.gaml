@@ -57,7 +57,6 @@ global
 	}
 	
 	reflex stopIt {
-		write time;
 		if length(people) <= 0
 		{
 			do pause;
@@ -90,27 +89,50 @@ species people
     int presenceTime <- 0;
  
 	//Force functions
-	point social_repulsion_force_function
+	point people_repulsion_force_function
 	{
 		point social_repulsion_force <- { 0.0, 0.0 };
-		ask people parallel:true
+		point physical_interaction_force  <- { 0.0, 0.0 };
+		
+		ask people parallel:true 
 		{
-			if (self != myself)
+			if self != myself
 			{
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float distance <- myself distance_to self;
+				float distance <- myself distance_to self;	
 				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
 				float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
+				
 				social_repulsion_force <- {
 				social_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
 				};
+				
+				if (distance <= size)
+				{
+					float theta;
+					
+					if ((myself.size + size) - norm(distanceCenter) <= 0.0) {
+						theta <- 0.0;
+					} else {
+						theta <- (myself.size + size) - norm(distanceCenter);
+					}
+	
+					point tij <- {-nij.y,nij.x};
+					
+					float deltaVitesseTangencielle <- 
+						(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
+					
+					physical_interaction_force <- {
+						physical_interaction_force.x + body * theta * nij.x + friction * theta * deltaVitesseTangencielle * tij.x,
+						physical_interaction_force.y + body * theta * nij.y + friction * theta * deltaVitesseTangencielle * tij.y
+					};
+				}
 			}
-
 		}
-
-		return social_repulsion_force;
+		
+		return {social_repulsion_force.x+physical_interaction_force.x,social_repulsion_force.y+physical_interaction_force.y};
 	}
-
+	
 	point wall_repulsion_force_function 
 	{
 		point wall_repulsion_force <- { 0.0, 0.0 };
@@ -152,59 +174,23 @@ species people
 		
 		return wall_repulsion_force;
 	}
-
-	point physical_interaction_force_function 
-	{
-		point physical_interaction_force  <- { 0.0, 0.0 };
-		
-		ask people parallel:true 
-		{
-			if (self distance_to myself <= size and self != myself)
-			{
-				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float distance <- myself distance_to self;
-				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
-				float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
-				
-				
-				float theta;
-				
-				if ((myself.size + size) - norm(distanceCenter) <= 0.0) {
-					theta <- 0.0;
-				} else {
-					theta <- (myself.size + size) - norm(distanceCenter);
-				}
-
-				point tij <- {-nij.y,nij.x};
-				
-				float deltaVitesseTangencielle <- 
-					(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
-				
-				physical_interaction_force <- {
-					physical_interaction_force.x + body * theta * nij.x + friction * theta * deltaVitesseTangencielle * tij.x,
-					physical_interaction_force.y + body * theta * nij.y + friction * theta * deltaVitesseTangencielle * tij.y
-				};
-				
-			}
-		}
-		
-		return physical_interaction_force; 	
-	}
 	
 	point fluctuation_term_function
    {
-   		if !isFluctuation {return {0.0,0.0};}
-   	
-   		normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
-       maximum_fluctuation <- {0,0};
-              
-       loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
-	   {
-			maximum_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};    
+		if !isFluctuation {return {0.0,0.0};}
+		if(cycle mod (1/deltaT) <= 0.001)
+		{
+			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
+			maximum_fluctuation <- {0,0};
+			          
+			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+			{
+				maximum_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};    
+			}
 		}
-   		   	
-	   point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
-	   return fluctuation_term;
+		   		   	
+		point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
+		return fluctuation_term;
    }
 	
 	
@@ -302,9 +288,14 @@ species people
 		//Goal attraction force
 		point goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
 
+		//Compute forces
+		point people_forces <- people_repulsion_force_function();
+		point wall_forces <-  wall_repulsion_force_function();
+		point fluctuation_forces <- fluctuation_term_function();
+
 		// Sum of the forces
 		point force_sum <- {
-		goal_attraction_force.x  + social_repulsion_force_function().x + wall_repulsion_force_function().x + physical_interaction_force_function().x + fluctuation_term_function().x, goal_attraction_force.y + social_repulsion_force_function().y + wall_repulsion_force_function().y + physical_interaction_force_function().y + fluctuation_term_function().y
+		goal_attraction_force.x  + people_forces.x + wall_forces.x + fluctuation_forces.x, goal_attraction_force.y + people_forces.y + wall_forces.y + fluctuation_forces.y
 		};
 		
 		// Acceleration
