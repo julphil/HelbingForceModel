@@ -10,7 +10,7 @@ global
 {
 	float deltaT min: 0.01 max: 1.0 <- 0.1;
 	
-	int number_of_agents min: 1 <- 20;
+	int number_of_people min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 	bool isDifferentGroup <- false; 
 	bool isRespawn <- false;
@@ -46,7 +46,7 @@ global
 	geometry shape <- rectangle(spaceLength, spaceWidth);
 	init
 	{
-		create people number: number_of_agents;
+		create people number: number_of_people;
 		if bottleneckSize < spaceWidth {
 			create wall number: number_of_walls;
 			} else {
@@ -175,7 +175,7 @@ species people
 		{
 			color <- # yellow;
 			location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			aim <- { spaceLength + 5, spaceWidth/2 };
+			aim <- { spaceLength/2 + 5, spaceWidth/2 };
 			group <- 1;
 		}
 
@@ -192,7 +192,7 @@ species people
 			if location.x >= spaceLength and group = 1
 			{
 				location <- { 0, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				aim <- { spaceLength + 5, spaceWidth/2 };
+				aim <- { spaceLength/2 + 5, spaceWidth/2 };
 			} else if location.x <= 0 and group = 0
 			{
 				location <- { spaceLength, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
@@ -336,7 +336,7 @@ experiment helbingNormal type: gui
 	parameter 'Delta T' var: deltaT;
 	parameter 'Is Different group ?' var: isDifferentGroup;
 	parameter 'Respawn' var: isRespawn;
-	parameter 'Pedestrian number' var: number_of_agents;
+	parameter 'Pedestrian number' var: number_of_people;
 	parameter 'Space length' var: spaceLength;
 	parameter 'Space width' var: spaceWidth;
 	parameter 'Bottleneck size' var: bottleneckSize;

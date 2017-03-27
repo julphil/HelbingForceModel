@@ -8,11 +8,14 @@ model EscapeCrowdSituation
 
 global
 {
+	//Simulated time between two step (in second)
 	float deltaT min: 0.01 max: 1.0 <- 0.1;
 	
-	int number_of_agents min: 1 <- 20;
+	//Nulber of agent
+	int number_of_people min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 	
+	//Use to choose the kind of simulation you want
 	bool isDifferentGroup <- true; 
 	bool isRespawn <- true;
 	bool isFluctuation  <- false;
@@ -46,16 +49,19 @@ global
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
+	
+	//Agent creation
 	init
 	{
-		create people number: number_of_agents;
-		if bottleneckSize < spaceWidth {
+		create people number: number_of_people;
+		if bottleneckSize <= spaceWidth {
 			create wall number: number_of_walls;
 			} else {
 			create wall number: number_of_walls-2;	
 		}
 	}
 	
+	//If agents does not respawn, pause the simulation at the time they're  no more agent in the simulation
 	reflex stopIt {
 		if length(people) <= 0
 		{
@@ -83,13 +89,14 @@ species people
     point normal_fluctuation;
     point maximum_fluctuation;
     
+    //Use to compute the average speed
     float lastDistanceToAim;
-    
     float orientedSpeed;
     float cumuledOrientedSpeed;
     int presenceTime <- 0;
  
 	//Force functions
+	//Social repulsion force + physical interaction force
 	point people_repulsion_force_function
 	{
 		point social_repulsion_force <- { 0.0, 0.0 };
@@ -104,10 +111,12 @@ species people
 				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
 				float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
 				
+				//Social force
 				social_repulsion_force <- {
 				social_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
 				};
 				
+				//Physical force
 				if (distance <= size)
 				{
 					float theta;
@@ -134,6 +143,7 @@ species people
 		return {social_repulsion_force.x+physical_interaction_force.x,social_repulsion_force.y+physical_interaction_force.y};
 	}
 	
+	//Wall dodge  force + physical interaction force
 	point wall_repulsion_force_function 
 	{
 		point wall_repulsion_force <- { 0.0, 0.0 };
@@ -176,9 +186,11 @@ species people
 		return wall_repulsion_force;
 	}
 	
+	//Noise in the movement of the pedestrian, rely on nervousness level
 	point fluctuation_term_function
    {
 		if !isFluctuation {return {0.0,0.0};}
+		//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
 		if(cycle mod (1/deltaT) <= 0.001)
 		{
 			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
@@ -217,16 +229,17 @@ species people
 		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
 		};
 		
-       normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
-       maximum_fluctuation <- {0,0};
+		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
+		maximum_fluctuation <- {0,0};
               
-       loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
-	   {
-			maximum_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};    
+		loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+		{
+	   		maximum_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};    
 		}
 		
 	}
 
+	//Check if the agent is out. If it the case, dependant if respawn is actived or not, it delte the agent or replace it 
 	reflex sortie
 	{
 		if isRespawn 
@@ -260,9 +273,10 @@ species people
 
 	}
 
+	//Calculation of the force and moveent of the agent
 	reflex step
 	{
-		
+		//Choose the destination point
 		if((group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) {
 			aim <- {spaceLength*group,location.y};
 		} else if (location.y < spaceWidth/2 - bottleneckSize/2 ) {
@@ -279,6 +293,7 @@ species people
 			aim <- {aim.x,location.y};
 		}
 		
+		//Save the current distance to the aim before any move
 		lastDistanceToAim <- self.location distance_to aim;
 		
 
@@ -313,6 +328,7 @@ species people
 		//Movement
 		location <- { location.x + actual_velocity.x*deltaT, location.y + actual_velocity.y*deltaT };
 		
+		//Calculate the current nervousness
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
 		presenceTime <- presenceTime  + 1;
@@ -384,25 +400,25 @@ species wall
 
 }
 
-experiment helbingPanic type: gui
+experiment helbingPanicSimulation type: gui
 {
-	parameter 'Delta T' var: deltaT;
-	parameter 'Is Different group ?' var: isDifferentGroup;
-	parameter 'Respawn' var: isRespawn;
-	parameter 'Fluctuation' var: isFluctuation;
-	parameter 'Pedestrian number' var: number_of_agents;
-	parameter 'Space length' var: spaceLength;
-	parameter 'Space width' var: spaceWidth;
-	parameter 'Bottleneck size' var: bottleneckSize;
-	parameter 'Interaction strength' var: Ai;
-	parameter 'Range of the repulsive interactions' var: Bi;
-	parameter 'Peception' var: lambda;
-	parameter 'Body contact strength' var: body;
-	parameter 'Body friction' var: friction;
+	parameter 'Delta T' var: deltaT category:"Simulation parameter";
+	parameter 'Is Different group ?' var: isDifferentGroup category:"Simulation parameter";
+	parameter 'Respawn' var: isRespawn category:"Simulation parameter";
+	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter";
+	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
+	parameter 'Space length' var: spaceLength category:"Space parameter";
+	parameter 'Space width' var: spaceWidth category:"Space parameter";
+	parameter 'Bottleneck size' var: bottleneckSize category:"Space parameter";
+	parameter 'Interaction strength' var: Ai category:"Forces parameter";
+	parameter 'Range of the repulsive interactions' var: Bi category:"Forces parameter";
+	parameter 'Peception' var: lambda category:"Forces parameter";
+	parameter 'Body contact strength' var: body category:"Forces parameter";
+	parameter 'Body friction' var: friction category:"Forces parameter";
 	
 	output
 	{
-		display SocialForceModel
+		display SocialForceModel_display
 		{
 			species people;
 			species wall;
@@ -433,5 +449,24 @@ experiment helbingPanic type: gui
 		}
 	}
 
+}
+
+experiment helbingPanicSimulation_lane type: gui parent:helbingPanicSimulation
+{
+	parameter 'Pedestrian number' var: number_of_people init:40;
+}
+
+experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPanicSimulation
+{
+	parameter 'Is Different group ?' var: isDifferentGroup init:false;
+	parameter 'Respawn' var: isRespawn init:false;
+	parameter 'Pedestrian number' var: number_of_people init:40;
+	parameter 'Space width' var: spaceWidth init:15;
+	parameter 'Bottleneck size' var: bottleneckSize init:2;
+}
+
+experiment helbingPanicSImulation_bottleneck_2group parent: helbingPanicSimulation_bottleneck_1group
+{
+	parameter 'Is Different group ?' var: isDifferentGroup init:true;
 }
 
