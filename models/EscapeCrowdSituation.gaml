@@ -85,6 +85,7 @@ species people
     
     float lastDistanceToAim;
     
+    float orientedSpeed;
     float cumuledOrientedSpeed;
     int presenceTime <- 0;
  
@@ -312,7 +313,8 @@ species people
 		//Movement
 		location <- { location.x + actual_velocity.x*deltaT, location.y + actual_velocity.y*deltaT };
 		
-		cumuledOrientedSpeed <- cumuledOrientedSpeed + (lastDistanceToAim - (self.location distance_to aim));
+		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
+		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
 		presenceTime <- presenceTime  + 1;
 		nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speed);
 		
@@ -419,6 +421,14 @@ experiment helbingPanic type: gui
 		{
 			chart "global nervoussness" {
 				data "global nervoussness" value: mean(people collect each.nervousness);
+			}
+		}
+		
+		display SocialForceModel_averageSpeed
+		{
+			chart "Average speed" {
+				data "Average speed" value: mean(people collect norm(each.actual_velocity));
+				data "Average directed speed" value: mean(people collect each.orientedSpeed)/deltaT;
 			}
 		}
 	}
