@@ -18,8 +18,8 @@ global
 	bool isFluctuation  <- false;
 
 	//space dimension
-	int spaceWidth min: 2 <- 6;
-	int spaceLength min: 5 <-30;
+	int spaceWidth min: 2 <- 7;
+	int spaceLength min: 5 <-20;
 	int bottleneckSize min: 0 <- 10;
 
 	//incremental var use in species init
@@ -27,13 +27,13 @@ global
 	int nbWalls <- 0;
 
 	//Acceleration relaxation time
-	float relaxation <- 2.0;
+	float relaxation <- 0.2;
 
 	//Interaction strength
-	float Ai min: 0.0 <- 1.0;
+	float Ai min: 0.0 <- 0.2;
 
 	//Range of the repulsive interactions
-	float Bi min: 0.0 <- 0.5;
+	float Bi min: 0.0 <- 2.0;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
@@ -208,7 +208,7 @@ species people
 		{
 			color <- # yellow;
 			location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			aim <- { spaceLength + 5, spaceWidth/2 };
+			aim <- { spaceLength/2 + 5, spaceWidth/2 };
 			group <- 1;
 		}
 
@@ -234,7 +234,7 @@ species people
 			if location.x >= spaceLength and group = 1
 			{
 				location <- { 0, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				aim <- { spaceLength + 5, spaceWidth/2 };
+				aim <- { spaceLength/2 + 5, spaceWidth/2 };
 			} else if location.x <= 0 and group = 0
 			{
 				location <- { spaceLength, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
