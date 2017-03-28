@@ -1,5 +1,5 @@
 /**
-* Name: NormalCrowdSituation
+* Name: PanicCrowdSituation
 * Author: Julien Philippe
 * Description:  Implementation of Helbing social force model in escape panic situation.
 */
@@ -33,7 +33,7 @@ global
 	float relaxation <- 0.2;
 
 	//Interaction strength
-	float Ai min: 0.0 <- 0.2;
+	float Ai min: 0.0 <- 1.0;
 
 	//Range of the repulsive interactions
 	float Bi min: 0.0 <- 2.0;
@@ -198,7 +198,7 @@ species people
 			          
 			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 			{
-				maximum_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};    
+				maximum_fluctuation <- { gauss(0,3),gauss(0,3)};
 			}
 		}
 		   		   	
@@ -213,14 +213,35 @@ species people
 		if nd mod 2 = 0 or !isDifferentGroup
 		{
 			color <- # black;
-			location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			aim <- { spaceLength/2 -5, spaceWidth/2};
+			//location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+			if(nd <20) {
+				location <- {nd+1,2.85};
+			} else {
+				location <- {nd-20,4.1};
+			}
+			
+			if (bottleneckSize < spaceWidth)
+			{
+				aim <- { spaceLength/2 -5, spaceWidth/2};
+			} else {
+				aim <- {0.0,location.y};
+			}
 			group <- 0;
 		} else
 		{
 			color <- # yellow;
-			location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			aim <- { spaceLength/2 + 5, spaceWidth/2 };
+			//location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+			if(nd <20) {
+				location <- {nd,1.6};
+			} else {
+				location <- {nd-20,5.35};
+			}
+			if (bottleneckSize < spaceWidth)
+			{
+				aim <- { spaceLength/2 + 5, spaceWidth/2 };
+			} else {
+				aim <- {spaceLength,location.y};
+			}
 			group <- 1;
 		}
 
@@ -234,7 +255,7 @@ species people
               
 		loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 		{
-	   		maximum_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};    
+	   		maximum_fluctuation <- { gauss(0,150),gauss(0,150)};    
 		}
 		
 	}
@@ -332,7 +353,8 @@ species people
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
 		presenceTime <- presenceTime  + 1;
-		nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speed);
+		//nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speed);
+		nervousness <- 1-((orientedSpeed/deltaT)/desired_speed);
 		
 	}
 
@@ -444,7 +466,7 @@ experiment helbingPanicSimulation type: gui
 		{
 			chart "Average speed" {
 				data "Average speed" value: mean(people collect norm(each.actual_velocity));
-				data "Average directed speed" value: mean(people collect each.orientedSpeed)/deltaT;
+				data "Average directed speed" value: mean(people collect each.orientedSpeed)/deltaT/relaxation;
 			}
 		}
 	}
@@ -454,6 +476,7 @@ experiment helbingPanicSimulation type: gui
 experiment helbingPanicSimulation_lane type: gui parent:helbingPanicSimulation
 {
 	parameter 'Pedestrian number' var: number_of_people init:40;
+	parameter 'Fluctuation' var: isFluctuation init:true;
 }
 
 experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPanicSimulation
