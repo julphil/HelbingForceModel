@@ -82,6 +82,7 @@ species people
 	point desired_direction;
 	float desired_speed <- 1.34;
 	point actual_velocity <- { 0.0, 0, 0 };
+	float max_velocity <- 1.3 * desired_speed;
 	
 	//Fluctuations
     point normal_fluctuation;
@@ -298,11 +299,9 @@ species people
 			if location.x >= spaceLength and group = 1
 			{
 				location <- { 0, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				aim <- { spaceLength/2 + 5, spaceWidth/2 };
 			} else if location.x <= 0 and group = 0
 			{
 				location <- { spaceLength, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				aim <- { spaceLength/2 -5, spaceWidth/2};
 			}
 		}
 		else if (location.x >= spaceLength and group = 1) or (location.x <= 0 and group = 0)
@@ -329,9 +328,9 @@ species people
 	{
 		if((group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) {
 			aim <- {spaceLength*group,location.y};
-		} else if (location.y < spaceWidth/2- bottleneckSize/2) {
+		} else if (bottleneckSize <= spaceWidth and location.y < spaceWidth/2) {
 			aim <- {aim.x,spaceWidth/2};
-		} else if (location.y > spaceWidth/2 + bottleneckSize/2 ) {
+		} else if (bottleneckSize <= spaceWidth and location.y > spaceWidth/2 ) {
 			aim <- {aim.x,spaceWidth/2};
 		} else if location.y <=1 {
 			aim <- {aim.x,1};
@@ -370,23 +369,16 @@ species people
 		goal_attraction_force.x  + people_forces.x + wall_forces.x + fluctuation_forces.x, goal_attraction_force.y + people_forces.y + wall_forces.y + fluctuation_forces.y
 		};
 		
-		if( length(people) = 1)
-		{
-			write name;			
-			write "\tdesired spedd: " + ({desired_speed*desired_direction.x,desired_speed*desired_direction.y}) ;
-			write "\tvelocity : " + actual_velocity;
-			write "\tgoal : " + goal_attraction_force;
-		}
+write name;			
+			write "\tvelocity : " + norm(actual_velocity);
+			write "\tgoalforce : " + norm(force_sum)*deltaT;
+			
 		
-		// Acceleration
-		float norme_sum <- norm(force_sum);
-		float max_velocity <- 1.3 * desired_speed;
-		if (norme_sum <= max_velocity)
+		float nav <- norm(actual_velocity);
+		actual_velocity <- { actual_velocity.x + force_sum.x*deltaT, actual_velocity.y + force_sum.y*deltaT };
+		if(nav>max_velocity )
 		{
-			actual_velocity <- { actual_velocity.x + force_sum.x, actual_velocity.y + force_sum.y };
-		} else
-		{
-			actual_velocity <- { force_sum.x * (max_velocity/ norme_sum), force_sum.y * (max_velocity / norme_sum) };
+			actual_velocity <- {actual_velocity.x*max_velocity/nav,actual_velocity.y*max_velocity/nav};
 		}
 
 		//Movement
@@ -396,8 +388,8 @@ species people
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
 		presenceTime <- presenceTime  + 1;
-		//nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speed);
-		nervousness <- 1-((orientedSpeed/deltaT)/desired_speed);
+		//nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speeddesired_speed*deltaT);
+		nervousness <- 1-((orientedSpeed/deltaT)/desired_speed*deltaT);
 		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
 		
 	}
@@ -511,7 +503,7 @@ experiment helbingPanicSimulation type: gui
 		{
 			chart "Average speed" {
 				data "Average speed" value: mean(people collect norm(each.actual_velocity));
-				data "Average directed speed" value: mean(people collect each.orientedSpeed)/deltaT/relaxation;
+				data "Average directed speed" value: mean(people collect each.orientedSpeed)/deltaT;
 			}
 		}
 	}
@@ -523,6 +515,14 @@ experiment helbingPanicSimulation_lane type: gui parent:helbingPanicSimulation
 	parameter 'Generation type' init:"lane";
 	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Fluctuation' var: isFluctuation init:true;
+}
+
+experiment helbingPanicSimulation_uniqueAgent type: gui parent:helbingPanicSimulation
+{
+	parameter 'Pedestrian number' var: number_of_people init:1;
+	parameter 'Space length' var: spaceLength init:50;
+	parameter 'Space width' var: spaceWidth init:50;
+	parameter 'Bottleneck size' var: bottleneckSize init:50;
 }
 
 experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPanicSimulation
