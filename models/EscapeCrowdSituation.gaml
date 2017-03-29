@@ -19,6 +19,7 @@ global
 	bool isDifferentGroup <- true; 
 	bool isRespawn <- true;
 	bool isFluctuation  <- false;
+	string type;
 
 	//space dimension
 	int spaceWidth min: 2 <- 7;
@@ -62,11 +63,8 @@ global
 	}
 	
 	//If agents does not respawn, pause the simulation at the time they're  no more agent in the simulation
-	reflex stopIt {
-		if length(people) <= 0
-		{
-			do pause;
-		}
+	reflex stopIt when:length(people) <= 0 {
+		do pause;
 	}
 
 }
@@ -193,13 +191,26 @@ species people
 		//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
 		if(cycle mod (1/deltaT) <= 0.001)
 		{
-			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
-			maximum_fluctuation <- {0,0};
-			          
-			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
-			{
-				maximum_fluctuation <- { gauss(0,3),gauss(0,3)};
-			}
+			float nf <- gauss(0,0.01);
+		float mf <- 0.0;
+		
+		
+		loop while:(mf < nf)
+		{
+			mf <-  gauss(0,2.5);
+			
+		}
+		
+		normal_fluctuation <- { nf,nf};
+		maximum_fluctuation <- {mf,mf};
+			
+//			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
+//			maximum_fluctuation <- {0,0};
+//			          
+//			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+//			{
+//				maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};
+//			}
 		}
 		   		   	
 		point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
@@ -213,11 +224,14 @@ species people
 		if nd mod 2 = 0 or !isDifferentGroup
 		{
 			color <- # black;
-			//location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			if(nd <20) {
-				location <- {nd+1,2.85};
-			} else {
-				location <- {nd-20,4.1};
+			if(type="random") {location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };}
+				else if type = "lane"
+				{
+				if(nd <20) {
+					location <- {nd+1,2.85};
+				} else {
+					location <- {nd-20,4.1};
+				}
 			}
 			
 			if (bottleneckSize < spaceWidth)
@@ -230,11 +244,14 @@ species people
 		} else
 		{
 			color <- # yellow;
-			//location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-			if(nd <20) {
-				location <- {nd,1.6};
-			} else {
-				location <- {nd-20,5.35};
+			if type = "random" {location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };}
+			else if type = "lane"
+			{
+				if(nd <20) {
+					location <- {nd,1.6};
+				} else {
+					location <- {nd-20,5.35};
+				}
 			}
 			if (bottleneckSize < spaceWidth)
 			{
@@ -250,13 +267,26 @@ species people
 		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
 		};
 		
-		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
+		float nf <- gauss(0,0.01);
+		float mf <- 0.0;
+		
+		
+		loop while:(mf < nf)
+		{
+			mf <-  gauss(0,2.5);
+			
+		}
+		
+		normal_fluctuation <- { nf,nf};
+		maximum_fluctuation <- {mf,mf};
+		
+		/*normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
 		maximum_fluctuation <- {0,0};
               
 		loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 		{
-	   		maximum_fluctuation <- { gauss(0,150),gauss(0,150)};    
-		}
+	   		maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};    
+		}*/
 		
 	}
 
@@ -293,17 +323,16 @@ species people
 		}
 
 	}
-
-	//Calculation of the force and moveent of the agent
-	reflex step
+	
+	//Choose the destination point
+	reflex aim
 	{
-		//Choose the destination point
 		if((group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) {
 			aim <- {spaceLength*group,location.y};
-		} else if (location.y < spaceWidth/2 - bottleneckSize/2 ) {
-			aim <- {aim.x,spaceWidth/2 - bottleneckSize/2 + 1};
+		} else if (location.y < spaceWidth/2- bottleneckSize/2) {
+			aim <- {aim.x,spaceWidth/2};
 		} else if (location.y > spaceWidth/2 + bottleneckSize/2 ) {
-			aim <- {aim.x,spaceWidth/2 + bottleneckSize/2 - 1};
+			aim <- {aim.x,spaceWidth/2};
 		} else if location.y <=1 {
 			aim <- {aim.x,1};
 			actual_velocity <- {0.0,0.0};
@@ -312,8 +341,12 @@ species people
 			actual_velocity <- {0.0,0.0};
 		} else {
 			aim <- {aim.x,location.y};
-		}
-		
+		}	
+	}
+
+	//Calculation of the force and moveent of the agent
+	reflex step
+	{	
 		//Save the current distance to the aim before any move
 		lastDistanceToAim <- self.location distance_to aim;
 		
@@ -330,10 +363,20 @@ species people
 		point wall_forces <-  wall_repulsion_force_function();
 		point fluctuation_forces <- fluctuation_term_function();
 
+		
+
 		// Sum of the forces
 		point force_sum <- {
 		goal_attraction_force.x  + people_forces.x + wall_forces.x + fluctuation_forces.x, goal_attraction_force.y + people_forces.y + wall_forces.y + fluctuation_forces.y
 		};
+		
+		if( length(people) = 1)
+		{
+			write name;			
+			write "\tdesired spedd: " + ({desired_speed*desired_direction.x,desired_speed*desired_direction.y}) ;
+			write "\tvelocity : " + actual_velocity;
+			write "\tgoal : " + goal_attraction_force;
+		}
 		
 		// Acceleration
 		float norme_sum <- norm(force_sum);
@@ -355,6 +398,7 @@ species people
 		presenceTime <- presenceTime  + 1;
 		//nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speed);
 		nervousness <- 1-((orientedSpeed/deltaT)/desired_speed);
+		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
 		
 	}
 
@@ -393,7 +437,7 @@ species wall
 
 			match 2
 			{
-				length <- 1.0;
+				length <- 0.5;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, width / 2 + 1 };
@@ -402,7 +446,7 @@ species wall
 
 			match 3
 			{
-				length <- 1.0;
+				length <- 0.5;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
@@ -424,6 +468,7 @@ species wall
 
 experiment helbingPanicSimulation type: gui
 {
+	parameter 'Generation type' var: type among:["random","lane"] init:"random" category:"Simulation parameter" ;
 	parameter 'Delta T' var: deltaT category:"Simulation parameter";
 	parameter 'Is Different group ?' var: isDifferentGroup category:"Simulation parameter";
 	parameter 'Respawn' var: isRespawn category:"Simulation parameter";
@@ -475,6 +520,7 @@ experiment helbingPanicSimulation type: gui
 
 experiment helbingPanicSimulation_lane type: gui parent:helbingPanicSimulation
 {
+	parameter 'Generation type' init:"lane";
 	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Fluctuation' var: isFluctuation init:true;
 }
