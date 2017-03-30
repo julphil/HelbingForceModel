@@ -31,7 +31,7 @@ global
 	int nbWalls <- 0;
 
 	//Acceleration relaxation time
-	float relaxation <- 0.2;
+	float relaxation min: 0.01 max: 1.0 <- 0.2;
 
 	//Interaction strength
 	float Ai min: 0.0 <- 1.0;
@@ -216,7 +216,7 @@ species people
 		   		   	
 		point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
 		return fluctuation_term;
-   }
+   } 
 	
 	
 	init
@@ -228,10 +228,10 @@ species people
 			if(type="random") {location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };}
 				else if type = "lane"
 				{
-				if(nd <20) {
-					location <- {nd+1,2.85};
-				} else {
-					location <- {nd-20,4.1};
+					if(nd <20) {
+						location <- {nd+1,2.85};
+					} else {
+						location <- {nd-20,4.1};
 				}
 			}
 			
@@ -461,19 +461,20 @@ species wall
 experiment helbingPanicSimulation type: gui
 {
 	parameter 'Generation type' var: type among:["random","lane"] init:"random" category:"Simulation parameter" ;
-	parameter 'Delta T' var: deltaT category:"Simulation parameter";
+	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second";
+	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second";
 	parameter 'Is Different group ?' var: isDifferentGroup category:"Simulation parameter";
 	parameter 'Respawn' var: isRespawn category:"Simulation parameter";
 	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter";
 	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
-	parameter 'Space length' var: spaceLength category:"Space parameter";
-	parameter 'Space width' var: spaceWidth category:"Space parameter";
-	parameter 'Bottleneck size' var: bottleneckSize category:"Space parameter";
-	parameter 'Interaction strength' var: Ai category:"Forces parameter";
-	parameter 'Range of the repulsive interactions' var: Bi category:"Forces parameter";
-	parameter 'Peception' var: lambda category:"Forces parameter";
-	parameter 'Body contact strength' var: body category:"Forces parameter";
-	parameter 'Body friction' var: friction category:"Forces parameter";
+	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
+	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
+	parameter 'Bottleneck size' var: bottleneckSize category:"Space parameter" unit:"Meter";
+	parameter 'Interaction strength' var: Ai category:"Forces parameter" unit:"Newton";
+	parameter 'Range of the repulsive interactions' var: Bi category:"Forces parameter" unit:"Meter";
+	parameter 'Peception' var: lambda category:"Forces parameter" slider:false;
+	parameter 'Body contact strength' var: body category:"Forces parameter" unit:"kg.s-2";
+	parameter 'Body friction' var: friction category:"Forces parameter" unit:"kg.m-1.s-1";
 	
 	output
 	{
@@ -532,6 +533,8 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Space width' var: spaceWidth init:15;
 	parameter 'Bottleneck size' var: bottleneckSize init:2;
+	parameter 'Interaction strength' var: Ai init:2.5;
+	parameter 'Range of the repulsive interactions' var: Bi init:0.08;
 }
 
 experiment helbingPanicSImulation_bottleneck_2group parent: helbingPanicSimulation_bottleneck_1group
