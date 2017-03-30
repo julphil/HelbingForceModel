@@ -11,7 +11,7 @@ global
 	//Simulated time between two step (in second)
 	float deltaT min: 0.01 max: 1.0 <- 0.1;
 	
-	//Nulber of agent
+	//Number of agent
 	int number_of_people min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 	
@@ -26,11 +26,11 @@ global
 	int spaceLength min: 5 <-20;
 	int bottleneckSize min: 0 <- 10;
 
-	//incremental var use in species init
+	//incremental var use in species initialisation
 	int nd <- 0;
 	int nbWalls <- 0;
 
-	//Acceleration relaxation time
+	//Acceleration  time
 	float relaxation min: 0.01 max: 1.0 <- 0.2;
 
 	//Interaction strength
@@ -75,6 +75,7 @@ species people
 	float size <- 0.5;
 	int group;
 	float nervousness <- 0.0;
+	float mass min:1.0 max:120.0 <- 1.0;
 	
 
 	// Destination
@@ -112,7 +113,7 @@ species people
 				
 				//Social force
 				social_repulsion_force <- {
-				social_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
+				social_repulsion_force.x + (Ai/mass * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai/mass * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
 				};
 				
 				//Physical force
@@ -120,7 +121,7 @@ species people
 				{
 					float theta;
 					
-					if ((myself.size + size) - norm(distanceCenter) <= 0.0) {
+					if ((myself.size + size) - norm(distanceCenter) <= 0.0) { //If there is no contact
 						theta <- 0.0;
 					} else {
 						theta <- (myself.size + size) - norm(distanceCenter);
@@ -157,7 +158,7 @@ species people
 				
 				float theta;
 				
-				if (distance-myself.size <= 0.0 or myself.location overlaps self or self overlaps myself.location) {
+				if (distance-myself.size <= 0.0 or myself.location overlaps self or self overlaps myself.location) { //if there is a contact
 					theta <- myself.size-distance;
 
 					if(distance-myself.size <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
@@ -176,8 +177,8 @@ species people
 					( myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
 				
 				wall_repulsion_force <- {
-					wall_repulsion_force.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
-					wall_repulsion_force.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
+					wall_repulsion_force.x + ((Ai/myself.mass * exp(myself.size-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
+					wall_repulsion_force.y + ((Ai/myself.mass * exp(myself.size-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
 				};
 			}
 		}
@@ -192,7 +193,7 @@ species people
 		//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
 		if(cycle mod (1/deltaT) <= 0.001)
 		{
-			float nf <- gauss(0,0.01);
+		float nf <- gauss(0,0.01);
 		float mf <- 0.0;
 		
 		
@@ -222,11 +223,12 @@ species people
 	init
 	{
 		shape <- circle(size);
+		//In this version, you can have one group of black agent going left. Or two group with the same black group plus a yellow group going rigth
 		if nd mod 2 = 0 or !isDifferentGroup
 		{
 			color <- # black;
-			if(type="random") {location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };}
-				else if type = "lane"
+			if(type="random") {location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };} //random location in a halfspace
+				else if type = "lane" //lane configuration starting location
 				{
 					if(nd <20) {
 						location <- {nd+1,2.85};
@@ -239,14 +241,14 @@ species people
 			{
 				aim <- { spaceLength/2 -5, spaceWidth/2};
 			} else {
-				aim <- {0.0,location.y};
+				aim <- {-size*2,location.y};
 			}
 			group <- 0;
 		} else
 		{
 			color <- # yellow;
-			if type = "random" {location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };}
-			else if type = "lane"
+			if type = "random" {location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };} //random location in a halfspace
+			else if type = "lane" //lane configuration starting location
 			{
 				if(nd <20) {
 					location <- {nd,1.6};
@@ -258,7 +260,7 @@ species people
 			{
 				aim <- { spaceLength/2 + 5, spaceWidth/2 };
 			} else {
-				aim <- {spaceLength,location.y};
+				aim <- {spaceLength+size*2,location.y};
 			}
 			group <- 1;
 		}
@@ -268,6 +270,7 @@ species people
 		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
 		};
 		
+		//Initilasation of the noise
 		float nf <- gauss(0,0.01);
 		float mf <- 0.0;
 		
@@ -326,21 +329,11 @@ species people
 	//Choose the destination point
 	reflex aim
 	{
-		if((group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) {
-			aim <- {spaceLength*group,location.y};
-		} else if (bottleneckSize <= spaceWidth and location.y < spaceWidth/2) {
+		if((bottleneckSize >= spaceWidth) or (group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
+			aim <- {spaceLength*group+size*2*group,location.y};
+		} else  { //Don't pass it
 			aim <- {aim.x,spaceWidth/2};
-		} else if (bottleneckSize <= spaceWidth and location.y > spaceWidth/2 ) {
-			aim <- {aim.x,spaceWidth/2};
-		} else if location.y <=1 {
-			aim <- {aim.x,1};
-			actual_velocity <- {0.0,0.0};
-		} else if location.y >= spaceWidth -1 {
-			aim <- {aim.x,spaceWidth -1};
-			actual_velocity <- {0.0,0.0};
-		} else {
-			aim <- {aim.x,location.y};
-		}	
+		}
 	}
 
 	//Calculation of the force and moveent of the agent
@@ -368,17 +361,13 @@ species people
 		point force_sum <- {
 		goal_attraction_force.x  + people_forces.x + wall_forces.x + fluctuation_forces.x, goal_attraction_force.y + people_forces.y + wall_forces.y + fluctuation_forces.y
 		};
-		
-write name;			
-			write "\tvelocity : " + norm(actual_velocity);
-			write "\tgoalforce : " + norm(force_sum)*deltaT;
 			
 		
-		float nav <- norm(actual_velocity);
+		float norm_actual_velocity <- norm(actual_velocity);
 		actual_velocity <- { actual_velocity.x + force_sum.x*deltaT, actual_velocity.y + force_sum.y*deltaT };
-		if(nav>max_velocity )
+		if(norm_actual_velocity>max_velocity )
 		{
-			actual_velocity <- {actual_velocity.x*max_velocity/nav,actual_velocity.y*max_velocity/nav};
+			actual_velocity <- {actual_velocity.x*max_velocity/norm_actual_velocity,actual_velocity.y*max_velocity/norm_actual_velocity};
 		}
 
 		//Movement
@@ -462,14 +451,16 @@ experiment helbingPanicSimulation type: gui
 {
 	parameter 'Generation type' var: type among:["random","lane"] init:"random" category:"Simulation parameter" ;
 	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second";
-	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second";
+	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second" slider:false;
 	parameter 'Is Different group ?' var: isDifferentGroup category:"Simulation parameter";
 	parameter 'Respawn' var: isRespawn category:"Simulation parameter";
 	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter";
 	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
+	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
 	parameter 'Bottleneck size' var: bottleneckSize category:"Space parameter" unit:"Meter";
+	
 	parameter 'Interaction strength' var: Ai category:"Forces parameter" unit:"Newton";
 	parameter 'Range of the repulsive interactions' var: Bi category:"Forces parameter" unit:"Meter";
 	parameter 'Peception' var: lambda category:"Forces parameter" slider:false;
@@ -511,6 +502,7 @@ experiment helbingPanicSimulation type: gui
 
 }
 
+//A hallway where agent are already in lane configuaration
 experiment helbingPanicSimulation_lane type: gui parent:helbingPanicSimulation
 {
 	parameter 'Generation type' init:"lane";
@@ -518,6 +510,7 @@ experiment helbingPanicSimulation_lane type: gui parent:helbingPanicSimulation
 	parameter 'Fluctuation' var: isFluctuation init:true;
 }
 
+//One agent, not  a real simulation, but usefull to debug
 experiment helbingPanicSimulation_uniqueAgent type: gui parent:helbingPanicSimulation
 {
 	parameter 'Pedestrian number' var: number_of_people init:1;
@@ -526,6 +519,7 @@ experiment helbingPanicSimulation_uniqueAgent type: gui parent:helbingPanicSimul
 	parameter 'Bottleneck size' var: bottleneckSize init:50;
 }
 
+//On group trying to pass a bottle neck
 experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPanicSimulation
 {
 	parameter 'Is Different group ?' var: isDifferentGroup init:false;
@@ -537,6 +531,7 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 	parameter 'Range of the repulsive interactions' var: Bi init:0.08;
 }
 
+//Two group trying to pass a bottleneck in diffrent direction
 experiment helbingPanicSImulation_bottleneck_2group parent: helbingPanicSimulation_bottleneck_1group
 {
 	parameter 'Is Different group ?' var: isDifferentGroup init:true;
