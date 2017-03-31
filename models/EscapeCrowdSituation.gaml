@@ -46,7 +46,7 @@ global
 	float body <- 1500.0;
 	
 	//Fiction coefficient
-	float friction <- 5.0;
+	float friction <- 3000.0;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
@@ -81,7 +81,7 @@ species people
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <-3.0;
+	float desired_speed <-1.34;
 	point actual_velocity <- { 0.0, 0, 0 };
 	float max_velocity <- 1.3 * desired_speed;
 	
