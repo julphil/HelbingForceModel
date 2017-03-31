@@ -158,7 +158,7 @@ species people
 
 					if(distance-myself.size <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
 					{
-						nij <- {nij.x,-nij.y};
+						nij <- {-nij.x,-nij.y};
 					}
 				}
 				else {
@@ -301,8 +301,9 @@ species people
 		};
 			
 		
-		float norm_actual_velocity <- norm(actual_velocity);
 		actual_velocity <- { actual_velocity.x + force_sum.x*deltaT, actual_velocity.y + force_sum.y*deltaT };
+		float norm_actual_velocity <- norm(actual_velocity);
+		
 		if(norm_actual_velocity>max_velocity )
 		{
 			actual_velocity <- {actual_velocity.x*max_velocity/norm_actual_velocity,actual_velocity.y*max_velocity/norm_actual_velocity};

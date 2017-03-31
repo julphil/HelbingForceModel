@@ -43,7 +43,7 @@ global
 	float lambda min: 0.0 max: 1.0 <- 0.5;
 	
 	//Body force coefficient
-	float body <- 100.0;
+	float body <- 1500.0;
 	
 	//Fiction coefficient
 	float friction <- 5.0;
@@ -81,7 +81,7 @@ species people
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <- 1.34;
+	float desired_speed <-3.0;
 	point actual_velocity <- { 0.0, 0, 0 };
 	float max_velocity <- 1.3 * desired_speed;
 	
@@ -163,7 +163,7 @@ species people
 
 					if(distance-myself.size <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
 					{
-						nij <- {nij.x,-nij.y};
+						nij <- {-nij.x,-nij.y};
 					}
 				}
 				else {
@@ -193,26 +193,14 @@ species people
 		//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
 		if(cycle mod (1/deltaT) <= 0.001)
 		{
-		float nf <- gauss(0,0.01);
-		float mf <- 0.0;
-		
-		
-		loop while:(mf < nf)
-		{
-			mf <-  gauss(0,2.5);
-			
-		}
-		
-		normal_fluctuation <- { nf,nf};
-		maximum_fluctuation <- {mf,mf};
-			
-//			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
-//			maximum_fluctuation <- {0,0};
-//			          
-//			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
-//			{
-//				maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};
-//			}
+
+			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
+			maximum_fluctuation <- {0,0};
+			          
+			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+			{
+				maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};
+			}
 		}
 		   		   	
 		point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
@@ -271,26 +259,13 @@ species people
 		};
 		
 		//Initilasation of the noise
-		float nf <- gauss(0,0.01);
-		float mf <- 0.0;
-		
-		
-		loop while:(mf < nf)
-		{
-			mf <-  gauss(0,2.5);
-			
-		}
-		
-		normal_fluctuation <- { nf,nf};
-		maximum_fluctuation <- {mf,mf};
-		
-		/*normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
+		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
 		maximum_fluctuation <- {0,0};
               
 		loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 		{
 	   		maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};    
-		}*/
+		}
 		
 	}
 
@@ -363,8 +338,9 @@ species people
 		};
 			
 		
-		float norm_actual_velocity <- norm(actual_velocity);
+		
 		actual_velocity <- { actual_velocity.x + force_sum.x*deltaT, actual_velocity.y + force_sum.y*deltaT };
+		float norm_actual_velocity <- norm(actual_velocity);
 		if(norm_actual_velocity>max_velocity )
 		{
 			actual_velocity <- {actual_velocity.x*max_velocity/norm_actual_velocity,actual_velocity.y*max_velocity/norm_actual_velocity};
@@ -418,7 +394,7 @@ species wall
 
 			match 2
 			{
-				length <- 0.5;
+				length <- 1.0;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, width / 2 + 1 };
@@ -427,7 +403,7 @@ species wall
 
 			match 3
 			{
-				length <- 0.5;
+				length <- 1.0;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
