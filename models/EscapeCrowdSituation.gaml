@@ -34,19 +34,19 @@ global
 	float relaxation min: 0.01 max: 1.0 <- 0.2;
 
 	//Interaction strength
-	float Ai min: 0.0 <- 1.0;
+	float Ai min: 0.0 <- 2000.0;
 
 	//Range of the repulsive interactions
-	float Bi min: 0.0 <- 2.0;
+	float Bi min: 0.0 <- 0.08;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;
 	
 	//Body force coefficient
-	float body <- 1500.0;
+	float body <- 120000.0;
 	
 	//Fiction coefficient
-	float friction <- 3000.0;
+	float friction <- 240000.0;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
@@ -75,7 +75,7 @@ species people
 	float size <- 0.5;
 	int group;
 	float nervousness <- 0.0;
-	float mass min:1.0 max:120.0 <- 1.0;
+	float mass min:1.0 max:120.0 <- 80.0;
 	
 
 	// Destination
@@ -109,11 +109,12 @@ species people
 				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
 				float distance <- myself distance_to self;	
 				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
-				float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
+				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
+				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
 				
 				//Social force
 				social_repulsion_force <- {
-				social_repulsion_force.x + (Ai/mass * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai/mass * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
+				social_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
 				};
 				
 				//Physical force
@@ -177,8 +178,8 @@ species people
 					( myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
 				
 				wall_repulsion_force <- {
-					wall_repulsion_force.x + ((Ai/myself.mass * exp(myself.size-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
-					wall_repulsion_force.y + ((Ai/myself.mass * exp(myself.size-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
+					wall_repulsion_force.x + ((Ai * exp(myself.size-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
+					wall_repulsion_force.y + ((Ai * exp(myself.size-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
 				};
 			}
 		}
@@ -334,7 +335,7 @@ species people
 
 		// Sum of the forces
 		point force_sum <- {
-		goal_attraction_force.x  + people_forces.x + wall_forces.x + fluctuation_forces.x, goal_attraction_force.y + people_forces.y + wall_forces.y + fluctuation_forces.y
+		goal_attraction_force.x  + people_forces.x/mass + wall_forces.x/mass + fluctuation_forces.x, goal_attraction_force.y + people_forces.y/mass + wall_forces.y/mass + fluctuation_forces.y
 		};
 			
 		
@@ -503,8 +504,6 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Space width' var: spaceWidth init:15;
 	parameter 'Bottleneck size' var: bottleneckSize init:2;
-	parameter 'Interaction strength' var: Ai init:2.5;
-	parameter 'Range of the repulsive interactions' var: Bi init:0.08;
 }
 
 //Two group trying to pass a bottleneck in diffrent direction
