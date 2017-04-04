@@ -140,7 +140,8 @@ species people
 				}
 			}
 		}
-		
+		float temp <- norm(physical_interaction_force)/mass/3.14;
+		if temp > 1600.0 {write name + " : " + temp + " N";}
 		return {social_repulsion_force.x+physical_interaction_force.x,social_repulsion_force.y+physical_interaction_force.y};
 	}
 	
@@ -216,7 +217,12 @@ species people
 		if nd mod 2 = 0 or !isDifferentGroup
 		{
 			color <- # black;
-			if(type="random") {location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };} //random location in a halfspace
+			if(type="random") {
+				location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				loop while:( agent_closest_to(self) distance_to self < size){
+					location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				}
+			} //random location in a halfspace
 				else if type = "lane" //lane configuration starting location
 				{
 					if(nd <20) {
@@ -236,7 +242,12 @@ species people
 		} else
 		{
 			color <- # yellow;
-			if type = "random" {location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };} //random location in a halfspace
+			if type = "random" {
+				location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				loop while:(agent_closest_to(self) distance_to self < size){
+					location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				}
+			} //random location in a halfspace
 			else if type = "lane" //lane configuration starting location
 			{
 				if(nd <20) {
@@ -253,7 +264,7 @@ species people
 			}
 			group <- 1;
 		}
-
+		 
 		nd <- nd + 1;
 		desired_direction <- {
 		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
@@ -267,6 +278,8 @@ species people
 		{
 	   		maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};    
 		}
+		
+		write name + " " + agents_overlapping(self) + " " ;
 		
 	}
 
