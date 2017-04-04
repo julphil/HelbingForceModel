@@ -100,7 +100,8 @@ species people
 	point people_repulsion_force_function
 	{
 		point social_repulsion_force <- { 0.0, 0.0 };
-		point physical_interaction_force  <- { 0.0, 0.0 };
+		point physical_repulsion_force  <- { 0.0, 0.0 };
+		point physical_tangencial_force  <- { 0.0, 0.0 };
 		
 		ask people parallel:true 
 		{
@@ -133,16 +134,21 @@ species people
 					float deltaVitesseTangencielle <- 
 						(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
 					
-					physical_interaction_force <- {
-						physical_interaction_force.x + body * theta * nij.x + friction * theta * deltaVitesseTangencielle * tij.x,
-						physical_interaction_force.y + body * theta * nij.y + friction * theta * deltaVitesseTangencielle * tij.y
+					physical_repulsion_force <- {
+						physical_repulsion_force.x + body * theta * nij.x,
+						physical_repulsion_force.y + body * theta * nij.y
+					};
+					
+					physical_tangencial_force <- {
+						physical_tangencial_force.x + friction * theta * deltaVitesseTangencielle * tij.x,
+						physical_tangencial_force.y + friction * theta * deltaVitesseTangencielle * tij.y
 					};
 				}
 			}
 		}
-		float temp <- norm(physical_interaction_force)/mass/3.14;
-		if temp > 1600.0 {write name + " : " + temp + " N";}
-		return {social_repulsion_force.x+physical_interaction_force.x,social_repulsion_force.y+physical_interaction_force.y};
+		float temp <- norm(physical_repulsion_force)/mass/3.14;
+		if temp > 1.0 {write name + " : " + temp + " N";}
+		return {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
 	//Wall dodge  force + physical interaction force
@@ -176,7 +182,7 @@ species people
 				point tij <- {-nij.y,nij.x};
 				
 				float deltaVitesseTangencielle <- 
-					( myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
+					( -myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
 				
 				wall_repulsion_force <- {
 					wall_repulsion_force.x + ((Ai * exp(myself.size-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
@@ -219,7 +225,7 @@ species people
 			color <- # black;
 			if(type="random") {
 				location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				loop while:( agent_closest_to(self) distance_to self < size){
+				loop while:( agent_closest_to(self).location distance_to self.location < size*2){
 					location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 				}
 			} //random location in a halfspace
@@ -244,7 +250,7 @@ species people
 			color <- # yellow;
 			if type = "random" {
 				location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				loop while:(agent_closest_to(self) distance_to self < size){
+				loop while:(agent_closest_to(self).location distance_to self.location < size*2){
 					location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 				}
 			} //random location in a halfspace
@@ -279,7 +285,6 @@ species people
 	   		maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};    
 		}
 		
-		write name + " " + agents_overlapping(self) + " " ;
 		
 	}
 
