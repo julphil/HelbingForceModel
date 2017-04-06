@@ -24,7 +24,7 @@ global
 	//space dimension
 	int spaceWidth min: 2 <- 7;
 	int spaceLength min: 5 <-20;
-	int bottleneckSize min: 0 <- 10;
+	float bottleneckSize min: 0.0 <- 10.0;
 
 	//incremental var use in species initialisation
 	int nd <- 0;
@@ -94,6 +94,14 @@ species people
     float orientedSpeed;
     float cumuledOrientedSpeed;
     int presenceTime <- 0;
+    
+    //Goal attraction force
+	point goal_attraction_force <- {0.0,0.0};
+
+	//Compute forces
+	point people_forces <- {0.0,0.0};
+	point wall_forces <- {0.0,0.0};
+	point fluctuation_forces <- {0.0,0.0};
  
 	//Force functions
 	//Social repulsion force + physical interaction force
@@ -146,8 +154,8 @@ species people
 				}
 			}
 		}
-		float temp <- norm(physical_repulsion_force)/mass/3.14;
-		if temp > 1.0 {write name + " : " + temp + " N";}
+		float temp <- norm(physical_repulsion_force)/3.14;
+		if temp > 6000.0 {write name + " : " + temp + " N";}
 		return {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
@@ -240,7 +248,7 @@ species people
 			
 			if (bottleneckSize < spaceWidth)
 			{
-				aim <- { spaceLength/2 -5, spaceWidth/2};
+				aim <- { spaceLength/2 -0.5, spaceWidth/2};
 			} else {
 				aim <- {-size*2,location.y};
 			}
@@ -264,7 +272,7 @@ species people
 			}
 			if (bottleneckSize < spaceWidth)
 			{
-				aim <- { spaceLength/2 + 5, spaceWidth/2 };
+				aim <- { spaceLength/2 + 0.5, spaceWidth/2 };
 			} else {
 				aim <- {spaceLength+size*2,location.y};
 			}
@@ -342,12 +350,12 @@ species people
 		desired_direction <- { (aim.x - location.x) / (norme + 0.000000001), (aim.y - location.y) / (norme + 0.000000001) };
 
 		//Goal attraction force
-		point goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
+		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
 
 		//Compute forces
-		point people_forces <- people_repulsion_force_function();
-		point wall_forces <-  wall_repulsion_force_function();
-		point fluctuation_forces <- fluctuation_term_function();
+		people_forces <- people_repulsion_force_function();
+		wall_forces <-  wall_repulsion_force_function();
+		fluctuation_forces <- fluctuation_term_function();
 
 		
 
@@ -381,6 +389,11 @@ species people
 	aspect default
 	{
 		draw circle(size) color: color;
+		draw line([{location.x+ desired_direction.x,location.y + desired_direction.y},{location.x,location.y}]) color: #blue begin_arrow:0.1;
+		draw line([{location.x+ goal_attraction_force.x*deltaT,location.y + goal_attraction_force.y*deltaT},{location.x,location.y}]) color: #pink begin_arrow:0.1;
+		draw line([{location.x+ people_forces.x*deltaT/mass,location.y + people_forces.y*deltaT/mass},{location.x,location.y}]) color: #purple begin_arrow:0.1;
+		draw line([{location.x+ wall_forces.x*deltaT,location.y + wall_forces.y*deltaT},{location.x,location.y}]) color: #orange begin_arrow:0.1;
+		draw line([{location.x+ actual_velocity.x,location.y + actual_velocity.y},{location.x,location.y}]) color: #red begin_arrow:0.1;
 	}
 
 }
@@ -413,7 +426,7 @@ species wall
 
 			match 2
 			{
-				length <- 1.0;
+				length <- 0.1;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, width / 2 + 1 };
@@ -422,7 +435,7 @@ species wall
 
 			match 3
 			{
-				length <- 1.0;
+				length <- 0.1;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
 				location <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
@@ -521,7 +534,7 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 	parameter 'Respawn' var: isRespawn init:false;
 	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Space width' var: spaceWidth init:15;
-	parameter 'Bottleneck size' var: bottleneckSize init:2;
+	parameter 'Bottleneck size' var: bottleneckSize init:1;
 }
 
 //Two group trying to pass a bottleneck in diffrent direction
