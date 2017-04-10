@@ -50,7 +50,7 @@ global
 	
 	//pedestrian caracteristics
 	float pedSize <- 0.25;
-	float pedDesiredSpeed min: 0.5 max: 10.0 <- 3.34;
+	float pedDesiredSpeed min: 0.5 max: 10.0 <- 1.34;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
@@ -119,15 +119,17 @@ species people
 		{
 			if self != myself
 			{
-				point distanceCenter <- { myself.location.x - self.location.x, myself.location.y - self.location.y };
-				float distance <- myself distance_to self;	
-				point nij <- { (myself.location.x - self.location.x) / norm(distanceCenter), (myself.location.y - self.location.y) / norm(distanceCenter) };
+				float distanceCenter <- norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+				float distance <- distanceCenter -(self.size+myself.size);
+				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
 				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
 				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
+				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
+				float repulsion <- Ai * exp(-distance / Bi);
 				
 				//Social force
 				social_repulsion_force <- {
-				social_repulsion_force.x + (Ai * exp(-distance / Bi) * nij.x * (lambda + (1 - lambda) * (1 + phiij) / 2)), social_repulsion_force.y + (Ai * exp(-distance / Bi) * nij.y * (lambda + (1 - lambda) * (1 + phiij) / 2))
+				social_repulsion_force.x + (repulsion * nij.x * vision), social_repulsion_force.y + (repulsion * nij.y *vision)
 				};
 				
 				//Physical force
@@ -135,10 +137,10 @@ species people
 				{
 					float theta;
 					
-					if ((myself.size + size) - norm(distanceCenter) <= 0.0) { //If there is no contact
+					if (-distance <= 0.0) { //If there is no contact
 						theta <- 0.0;
 					} else {
-						theta <- (myself.size + size) - norm(distanceCenter);
+						theta <- -distance;
 					}
 	
 					point tij <- {-nij.y,nij.x};
@@ -170,16 +172,16 @@ species people
 			if (self != myself)
 			{
 				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
-				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y });
+				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y })-myself.size;
 				point nij <- { (myself.location.x - wallClosestPoint.x) / distance, (myself.location.y - wallClosestPoint.y) / distance};
 				
 				
 				float theta;
 				
-				if (distance-myself.size <= 0.0 or myself.location overlaps self or self overlaps myself.location) { //if there is a contact
-					theta <- myself.size-distance;
+				if (distance <= 0.0 or myself.location overlaps self or self overlaps myself.location) { //if there is a contact
+					theta <- -distance;
 
-					if(distance-myself.size <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
+					if(distance <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
 					{
 						nij <- {-nij.x,-nij.y};
 					}
