@@ -9,7 +9,7 @@ model EscapeCrowdSituation
 global
 {
 	//Simulated time between two step (in second)
-	float deltaT min: 0.01 max: 1.0 <- 0.1;
+	float deltaT min: 0.0001 max: 1.0 <- 0.1;
 	
 	//Number of agent
 	int number_of_people min: 1 <- 20;
@@ -47,6 +47,10 @@ global
 	
 	//Fiction coefficient
 	float friction <- 240000.0;
+	
+	//pedestrian caracteristics
+	float pedSize <- 0.25;
+	float pedDesiredSpeed min: 0.5 max: 10.0 <- 3.34;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
@@ -72,7 +76,7 @@ global
 species people
 {
 	rgb color;
-	float size <- 0.5;
+	float size;
 	int group;
 	float nervousness <- 0.0;
 	float mass min:1.0 max:120.0 <- 80.0;
@@ -81,9 +85,9 @@ species people
 	// Destination
 	point aim;
 	point desired_direction;
-	float desired_speed <-1.34;
+	float desired_speed;
 	point actual_velocity <- { 0.0, 0, 0 };
-	float max_velocity <- 1.3 * desired_speed;
+	float max_velocity;
 	
 	//Fluctuations
     point normal_fluctuation;
@@ -154,8 +158,6 @@ species people
 				}
 			}
 		}
-		float temp <- norm(physical_repulsion_force)/3.14;
-		if temp > 6000.0 {write name + " : " + temp + " N";}
 		return {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
@@ -198,7 +200,6 @@ species people
 				};
 			}
 		}
-		
 		return wall_repulsion_force;
 	}
 	
@@ -226,6 +227,10 @@ species people
 	
 	init
 	{
+		self.size <- pedSize;
+		self.desired_speed <- pedDesiredSpeed;
+		max_velocity <- 1.3 * desired_speed;
+		
 		shape <- circle(size);
 		//In this version, you can have one group of black agent going left. Or two group with the same black group plus a yellow group going rigth
 		if nd mod 2 = 0 or !isDifferentGroup
@@ -233,8 +238,11 @@ species people
 			color <- # black;
 			if(type="random") {
 				location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				loop while:( agent_closest_to(self).location distance_to self.location < size*2){
-					location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				if (number_of_people > 1)
+				{
+					loop while:( agent_closest_to(self).location distance_to self.location < size*2){
+						location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+					}
 				}
 			} //random location in a halfspace
 				else if type = "lane" //lane configuration starting location
@@ -258,8 +266,11 @@ species people
 			color <- # yellow;
 			if type = "random" {
 				location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				loop while:(agent_closest_to(self).location distance_to self.location < size*2){
-					location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				if (number_of_people > 1)
+				{
+					loop while:(agent_closest_to(self).location distance_to self.location < size*2){
+						location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+					}
 				}
 			} //random location in a halfspace
 			else if type = "lane" //lane configuration starting location
@@ -381,7 +392,7 @@ species people
 		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
 		presenceTime <- presenceTime  + 1;
 		//nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speeddesired_speed*deltaT);
-		nervousness <- 1-((orientedSpeed/deltaT)/desired_speed*deltaT);
+		nervousness <- 1-((orientedSpeed)/(desired_speed*deltaT));
 		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
 		
 	}
@@ -464,6 +475,7 @@ experiment helbingPanicSimulation type: gui
 	parameter 'Respawn' var: isRespawn category:"Simulation parameter";
 	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter";
 	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
+	parameter 'Pedestrian speed' var: pedDesiredSpeed category:"Simulation parameter" unit:"m.s-1" slider:false;
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
@@ -522,9 +534,9 @@ experiment helbingPanicSimulation_lane type: gui parent:helbingPanicSimulation
 experiment helbingPanicSimulation_uniqueAgent type: gui parent:helbingPanicSimulation
 {
 	parameter 'Pedestrian number' var: number_of_people init:1;
-	parameter 'Space length' var: spaceLength init:50;
-	parameter 'Space width' var: spaceWidth init:50;
-	parameter 'Bottleneck size' var: bottleneckSize init:50;
+	parameter 'Space length' var: spaceLength init:10;
+	parameter 'Space width' var: spaceWidth init:10;
+	parameter 'Bottleneck size' var: bottleneckSize init:0.0;
 }
 
 //On group trying to pass a bottle neck
@@ -534,7 +546,7 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 	parameter 'Respawn' var: isRespawn init:false;
 	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Space width' var: spaceWidth init:15;
-	parameter 'Bottleneck size' var: bottleneckSize init:1;
+	parameter 'Bottleneck size' var: bottleneckSize init:1.0;
 }
 
 //Two group trying to pass a bottleneck in diffrent direction
