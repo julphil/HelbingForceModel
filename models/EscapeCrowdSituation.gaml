@@ -173,7 +173,7 @@ species people
 			{
 				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
 				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y })-myself.size;
-				point nij <- { (myself.location.x - wallClosestPoint.x) / distance, (myself.location.y - wallClosestPoint.y) / distance};
+				point nij <- { (myself.location.x - wallClosestPoint.x) / (distance+myself.size), (myself.location.y - wallClosestPoint.y) / (distance+myself.size)};
 				
 				
 				float theta;
@@ -197,8 +197,8 @@ species people
 					( -myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
 				
 				wall_repulsion_force <- {
-					wall_repulsion_force.x + ((Ai * exp(myself.size-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
-					wall_repulsion_force.y + ((Ai * exp(myself.size-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
+					wall_repulsion_force.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
+					wall_repulsion_force.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
 				};
 			}
 		}
@@ -239,7 +239,8 @@ species people
 		{
 			color <- # black;
 			if(type="random") {
-				location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+//				HERElocation <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				location <- { spaceLength - rnd(spaceLength - 3), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 				if (number_of_people > 1)
 				{
 					loop while:( agent_closest_to(self).location distance_to self.location < size*2){
@@ -258,7 +259,8 @@ species people
 			
 			if (bottleneckSize < spaceWidth)
 			{
-				aim <- { spaceLength/2 -0.5, spaceWidth/2};
+				//HEREaim <- { spaceLength/2 -0.5, spaceWidth/2};
+				aim <- { 2 -0.5, spaceWidth/2};
 			} else {
 				aim <- {-size*2,location.y};
 			}
@@ -344,7 +346,8 @@ species people
 	//Choose the destination point
 	reflex aim
 	{
-		if((bottleneckSize >= spaceWidth) or (group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
+		//HEREif((bottleneckSize >= spaceWidth) or (group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
+		if((bottleneckSize >= spaceWidth) or (group = 0 and location.x < 2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
 			aim <- {spaceLength*group+size*2*group,location.y};
 		} else  { //Don't pass it
 			aim <- {aim.x,spaceWidth/2};
@@ -439,19 +442,21 @@ species wall
 
 			match 2
 			{
-				length <- 0.1;
+				length <- 1.0;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
-				location <- { spaceLength / 2.0, width / 2 + 1 };
+				//HERElocation <- { spaceLength / 2.0, width / 2 + 1 };
+				location <- { 2.0, width / 2 + 1 };
 				break;
 			}
 
 			match 3
 			{
-				length <- 0.1;
+				length <- 1.0;
 				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
 				shape <- rectangle(length, width);
-				location <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
+				//HERElocation <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
+				location <- { 2, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
 				break;
 			}
 
