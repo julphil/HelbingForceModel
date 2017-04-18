@@ -1,10 +1,10 @@
 /**
-* Name: PanicCrowdSituation
-* Author: Julien Philippe
-* Description:  Implementation of Helbing social force model in escape panic situation.
+* Name: InteractionEscapeCrowdSituation
+* Author: julien
+* Description: Implementation of Helbing social force model in escape panic situation. Interation are implemented
 */
 
-model EscapeCrowdSituation
+model InteractionEscapeCrowdSituation
 
 global
 {
@@ -59,6 +59,9 @@ global
 	//Simulation survey
 	int nb_people <- number_of_people;
 	
+	//Interraction Graph
+	graph interactions <- graph([]);
+	
 	//Agent creation
 	init
 	{
@@ -68,6 +71,11 @@ global
 			} else {
 			create wall number: number_of_walls-2;	
 		}
+		
+		ask people parallel:true
+		{
+			interactions <- interactions add_node self;
+		}
 	}
 	
 	reflex count
@@ -75,12 +83,24 @@ global
 		nb_people <- length(people);
 	}
 	
+	reflex interactionUpdate
+	{
+		write interactions.edges;
+		
+		interactions <- graph([]);
+		ask people parallel:true
+		{
+			interactions <- interactions add_node self;
+		}
+		
+		
+	}
+	
 	//If agents does not respawn, pause the simulation at the time they're  no more agent in the simulation
 	reflex stopIt when:nb_people <= 0 {
 		if headless {do halt;}
 		do pause;
 	}
-
 }
 
 species people
@@ -117,6 +137,11 @@ species people
 	point wall_forces <- {0.0,0.0};
 	point fluctuation_forces <- {0.0,0.0};
  
+ 	reflex interactionUpdate
+	{
+		write interactions;	
+	}
+ 
 	//Force functions
 	//Social repulsion force + physical interaction force
 	point people_repulsion_force_function
@@ -136,6 +161,11 @@ species people
 				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
 				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
 				float repulsion <- Ai * exp(-distance / Bi);
+				
+				if (vision > 0.75)
+				{
+					interactions <- interactions add_edge (self.location::myself.location);
+				}
 				
 				//Social force
 				social_repulsion_force <- {
@@ -511,7 +541,19 @@ experiment helbingPanicSimulation type: gui
 		{
 			species people;
 			species wall;
+			
+			graphics "links" {
+
+           	loop edge over: interactions.edges {
+				
+           		draw link((edge as pair)) color: #red;
+
+           	}
+
+           }
+			
 		}
+		
 		display SocialForceModel_NBPeople
 		{
 			chart "Number of peoples still inside " {
