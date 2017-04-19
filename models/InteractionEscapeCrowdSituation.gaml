@@ -59,8 +59,6 @@ global
 	//Simulation survey
 	int nb_people <- number_of_people;
 	
-	//Interraction Graph
-	graph interactions <- graph([]);
 	
 	//Agent creation
 	init
@@ -71,11 +69,6 @@ global
 			} else {
 			create wall number: number_of_walls-2;	
 		}
-		
-		ask people parallel:true
-		{
-			interactions <- interactions add_node self;
-		}
 	}
 	
 	reflex count
@@ -83,17 +76,27 @@ global
 		nb_people <- length(people);
 	}
 	
-	reflex interactionUpdate
+	reflex scheduler
 	{
-		write interactions.edges;
-		
-		interactions <- graph([]);
-		ask people parallel:true
-		{
-			interactions <- interactions add_node self;
+		ask people parallel:true{
+			do sortie;
 		}
 		
-		
+		ask people parallel:true{
+			do interactionClean;
+			do aim;	
+			do computeVelocity;
+		}
+		ask people {
+			do mouvement;
+		}
+		ask people parallel:true{
+			do computeNervousness;
+//			do colorChoice;
+		}
+		ask people parallel:true{
+//			do colorPropagation;
+		}
 	}
 	
 	//If agents does not respawn, pause the simulation at the time they're  no more agent in the simulation
@@ -105,6 +108,7 @@ global
 
 species people
 {
+	rgb d_color;
 	rgb color;
 	float size;
 	int group;
@@ -137,136 +141,9 @@ species people
 	point wall_forces <- {0.0,0.0};
 	point fluctuation_forces <- {0.0,0.0};
  
- 	reflex interactionUpdate
-	{
-		write interactions;	
-	}
- 
-	//Force functions
-	//Social repulsion force + physical interaction force
-	point people_repulsion_force_function
-	{
-		point social_repulsion_force <- { 0.0, 0.0 };
-		point physical_repulsion_force  <- { 0.0, 0.0 };
-		point physical_tangencial_force  <- { 0.0, 0.0 };
-		
-		ask people parallel:true 
-		{
-			if self != myself
-			{
-				float distanceCenter <- norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
-				float distance <- distanceCenter -(self.size+myself.size);
-				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
-				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
-				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
-				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
-				float repulsion <- Ai * exp(-distance / Bi);
-				
-				if (vision > 0.75)
-				{
-					interactions <- interactions add_edge (self.location::myself.location);
-				}
-				
-				//Social force
-				social_repulsion_force <- {
-				social_repulsion_force.x + (repulsion * nij.x * vision), social_repulsion_force.y + (repulsion * nij.y *vision)
-				};
-				
-				//Physical force
-				if (distance <= size)
-				{
-					float theta;
-					
-					if (-distance <= 0.0) { //If there is no contact
-						theta <- 0.0;
-					} else {
-						theta <- -distance;
-					}
-	
-					point tij <- {-nij.y,nij.x};
-					
-					float deltaVitesseTangencielle <- 
-						(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
-					
-					physical_repulsion_force <- {
-						physical_repulsion_force.x + body * theta * nij.x,
-						physical_repulsion_force.y + body * theta * nij.y
-					};
-					
-					physical_tangencial_force <- {
-						physical_tangencial_force.x + friction * theta * deltaVitesseTangencielle * tij.x,
-						physical_tangencial_force.y + friction * theta * deltaVitesseTangencielle * tij.y
-					};
-				}
-			}
-		}
-		return {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
-	}
-	
-	//Wall dodge  force + physical interaction force
-	point wall_repulsion_force_function 
-	{
-		point wall_repulsion_force <- { 0.0, 0.0 };
-		ask wall parallel:true
-		{
-			if (self != myself)
-			{
-				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
-				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y })-myself.size;
-				point nij <- { (myself.location.x - wallClosestPoint.x) / (distance+myself.size), (myself.location.y - wallClosestPoint.y) / (distance+myself.size)};
-				
-				
-				float theta;
-				
-				if (distance <= 0.0 or myself.location overlaps self or self overlaps myself.location) { //if there is a contact
-					theta <- -distance;
-
-					if(distance <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
-					{
-						nij <- {-nij.x,-nij.y};
-					}
-				}
-				else {
-					theta <- 0.0;
-				}
-				
-				
-				point tij <- {-nij.y,nij.x};
-				
-				float deltaVitesseTangencielle <- 
-					( -myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
-				
-				wall_repulsion_force <- {
-					wall_repulsion_force.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
-					wall_repulsion_force.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
-				};
-			}
-		}
-		return wall_repulsion_force;
-	}
-	
-	//Noise in the movement of the pedestrian, rely on nervousness level
-	point fluctuation_term_function
-   {
-		if !isFluctuation {return {0.0,0.0};}
-		//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
-		if(cycle mod (1/deltaT) <= 0.001)
-		{
-
-			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
-			maximum_fluctuation <- {0,0};
-			          
-			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
-			{
-				maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};
-			}
-		}
-		   		   	
-		point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
-		return fluctuation_term;
-   } 
-	
-	
+ 	//Interaction agent
+ 	list<people> interaction;
+ 	
 	init
 	{
 		self.size <- pedSize;
@@ -277,7 +154,7 @@ species people
 		//In this version, you can have one group of black agent going left. Or two group with the same black group plus a yellow group going rigth
 		if nd mod 2 = 0 or !isDifferentGroup
 		{
-			color <- # black;
+			d_color <- # black;
 			if(type="random") {
 //				HERElocation <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 				location <- { spaceLength - rnd(spaceLength - 3), rnd(spaceWidth - (1 + size)*2) + 1 + size };
@@ -307,7 +184,7 @@ species people
 			group <- 0;
 		} else
 		{
-			color <- # yellow;
+			d_color <- # yellow;
 			if type = "random" {
 				location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 				if (number_of_people > 1)
@@ -348,11 +225,16 @@ species people
 	   		maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};    
 		}
 		
-		
+		color <- d_color;
+	}
+
+	action interactionClean
+	{
+		interaction <- [];
 	}
 
 	//Check if the agent is out. If it the case, dependant if respawn is actived or not, it delte the agent or replace it 
-	reflex sortie
+	action sortie
 	{
 		if isRespawn 
 		{
@@ -384,7 +266,7 @@ species people
 	}
 	
 	//Choose the destination point
-	reflex aim
+	action aim
 	{
 		//HEREif((bottleneckSize >= spaceWidth) or (group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
 		if((bottleneckSize >= spaceWidth) or (group = 0 and location.x < 2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
@@ -394,8 +276,132 @@ species people
 		}
 	}
 
+	//Force functions
+	//Social repulsion force + physical interaction force
+	action people_repulsion_force_function
+	{
+		point social_repulsion_force <- { 0.0, 0.0 };
+		point physical_repulsion_force  <- { 0.0, 0.0 };
+		point physical_tangencial_force  <- { 0.0, 0.0 };
+		
+		people_forces <- {0.0, 0.0};
+		
+		ask people parallel:true 
+		{
+			if self != myself
+			{
+				float distanceCenter <- norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+				float distance <- distanceCenter -(self.size+myself.size);
+				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
+				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
+				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
+				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
+				float repulsion <- Ai * exp(-distance / Bi);
+				
+				if (vision > 0.90 and distance < 5)
+				{
+					add self to: myself.interaction;
+				}
+				
+				//Social force
+				social_repulsion_force <- {
+				social_repulsion_force.x + (repulsion * nij.x * vision), social_repulsion_force.y + (repulsion * nij.y *vision)
+				};
+				
+				//Physical force
+				if (distance <= size)
+				{
+					float theta;
+					
+					if (-distance <= 0.0) { //If there is no contact
+						theta <- 0.0;
+					} else {
+						theta <- -distance;
+					}
+	
+					point tij <- {-nij.y,nij.x};
+					
+					float deltaVitesseTangencielle <- 
+						(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
+					
+					physical_repulsion_force <- {
+						physical_repulsion_force.x + body * theta * nij.x,
+						physical_repulsion_force.y + body * theta * nij.y
+					};
+					
+					physical_tangencial_force <- {
+						physical_tangencial_force.x + friction * theta * deltaVitesseTangencielle * tij.x,
+						physical_tangencial_force.y + friction * theta * deltaVitesseTangencielle * tij.y
+					};
+				}
+			}
+		}
+		people_forces <- {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
+	}
+	
+	//Wall dodge  force + physical interaction force
+	action wall_repulsion_force_function 
+	{
+		wall_forces <- { 0.0, 0.0 };
+		ask wall parallel:true
+		{
+			if (self != myself)
+			{
+				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
+				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y })-myself.size;
+				point nij <- { (myself.location.x - wallClosestPoint.x) / (distance+myself.size), (myself.location.y - wallClosestPoint.y) / (distance+myself.size)};
+				
+				
+				float theta;
+				
+				if (distance <= 0.0 or myself.location overlaps self or self overlaps myself.location) { //if there is a contact
+					theta <- -distance;
+
+					if(distance <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
+					{
+						nij <- {-nij.x,-nij.y};
+					}
+				}
+				else {
+					theta <- 0.0;
+				}
+				
+				
+				point tij <- {-nij.y,nij.x};
+				
+				float deltaVitesseTangencielle <- 
+					( -myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
+				
+				myself.wall_forces <- {
+					myself.wall_forces.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
+					myself.wall_forces.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
+				};
+			}
+		}
+	}
+	
+	//Noise in the movement of the pedestrian, rely on nervousness level
+	action fluctuation_term_function
+   {
+		if !isFluctuation {return {0.0,0.0};}
+		//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
+		if(cycle mod (1/deltaT) <= 0.001)
+		{
+
+			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
+			maximum_fluctuation <- {0,0};
+			          
+			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+			{
+				maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};
+			}
+		}
+		   		   	
+		fluctuation_forces <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
+   } 
+
 	//Calculation of the force and moveent of the agent
-	reflex step
+	action computeVelocity
 	{	
 		//Save the current distance to the aim before any move
 		lastDistanceToAim <- self.location distance_to aim;
@@ -409,9 +415,12 @@ species people
 		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
 
 		//Compute forces
-		people_forces <- people_repulsion_force_function();
-		wall_forces <-  wall_repulsion_force_function();
-		fluctuation_forces <- fluctuation_term_function();
+		do  people_repulsion_force_function;
+		do wall_repulsion_force_function;
+		do fluctuation_term_function;
+//		people_forces <- people_repulsion_force_function();
+//		wall_forces <-  wall_repulsion_force_function();
+//		fluctuation_forces <- fluctuation_term_function();
 
 		
 
@@ -429,9 +438,16 @@ species people
 			actual_velocity <- {actual_velocity.x*max_velocity/norm_actual_velocity,actual_velocity.y*max_velocity/norm_actual_velocity};
 		}
 
+	}
+	
+	action mouvement
+	{
 		//Movement
 		location <- { location.x + actual_velocity.x*deltaT, location.y + actual_velocity.y*deltaT };
-		
+	}
+	
+	action computeNervousness
+	{
 		//Calculate the current nervousness
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
@@ -439,11 +455,32 @@ species people
 		//nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speeddesired_speed*deltaT);
 		nervousness <- 1-((orientedSpeed)/(desired_speed*deltaT));
 		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
-		
+	}
+	
+	action colorChoice
+	{
+		color <- d_color;
+		if nervousness > 0.8
+		{
+			color <- #purple;
+		}
+}
+	
+	action colorPropagation
+	{
+		ask interaction
+		{
+			if(color = #purple or color = #red)
+			{
+				myself.color <- #red;
+			}
+		}
 	}
 
 	aspect default
 	{
+		
+
 		draw circle(size) color: color;
 		draw line([{location.x+ desired_direction.x,location.y + desired_direction.y},{location.x,location.y}]) color: #blue begin_arrow:0.1;
 		draw line([{location.x+ goal_attraction_force.x*deltaT,location.y + goal_attraction_force.y*deltaT},{location.x,location.y}]) color: #pink begin_arrow:0.1;
@@ -541,16 +578,8 @@ experiment helbingPanicSimulation type: gui
 		{
 			species people;
 			species wall;
-			
-			graphics "links" {
 
-           	loop edge over: interactions.edges {
-				
-           		draw link((edge as pair)) color: #red;
-
-           	}
-
-           }
+           
 			
 		}
 		
