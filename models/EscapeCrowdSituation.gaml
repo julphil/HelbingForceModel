@@ -75,6 +75,27 @@ global
 		nb_people <- length(people);
 	}
 	
+	reflex scheduler
+	{
+		ask people parallel:true{
+			do sortie;
+		}
+		
+		ask people parallel:true{
+			do aim;	
+			do computeVelocity;
+		}
+		ask people {
+			do mouvement;
+		}
+		if(cycle mod (1/deltaT) <= 0.001)
+		{
+			ask people parallel:true{
+				do computeNervousness;
+			}
+		}
+	}
+	
 	//If agents does not respawn, pause the simulation at the time they're  no more agent in the simulation
 	reflex stopIt when:nb_people <= 0 {
 		if headless {do halt;}
@@ -119,11 +140,13 @@ species people
  
 	//Force functions
 	//Social repulsion force + physical interaction force
-	point people_repulsion_force_function
+	action people_repulsion_force_function
 	{
 		point social_repulsion_force <- { 0.0, 0.0 };
 		point physical_repulsion_force  <- { 0.0, 0.0 };
 		point physical_tangencial_force  <- { 0.0, 0.0 };
+		
+		people_forces <- {0.0, 0.0};
 		
 		ask people parallel:true 
 		{
@@ -170,13 +193,13 @@ species people
 				}
 			}
 		}
-		return {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
+		people_forces <- {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
 	//Wall dodge  force + physical interaction force
-	point wall_repulsion_force_function 
+	action wall_repulsion_force_function 
 	{
-		point wall_repulsion_force <- { 0.0, 0.0 };
+		wall_forces <- { 0.0, 0.0 };
 		ask wall parallel:true
 		{
 			if (self != myself)
@@ -206,34 +229,32 @@ species people
 				float deltaVitesseTangencielle <- 
 					( -myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
 				
-				wall_repulsion_force <- {
-					wall_repulsion_force.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
-					wall_repulsion_force.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
+				myself.wall_forces <- {
+					myself.wall_forces.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
+					myself.wall_forces.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
 				};
 			}
 		}
-		return wall_repulsion_force;
 	}
 	
 	//Noise in the movement of the pedestrian, rely on nervousness level
-	point fluctuation_term_function
+	action fluctuation_term_function
    {
 		if !isFluctuation {return {0.0,0.0};}
 		//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
 		if(cycle mod (1/deltaT) <= 0.001)
 		{
 
-			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
+			normal_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};
 			maximum_fluctuation <- {0,0};
 			          
 			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 			{
-				maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};
+				maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};
 			}
 		}
 		   		   	
-		point fluctuation_term <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
-		return fluctuation_term;
+		fluctuation_forces <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
    } 
 	
 	
@@ -322,7 +343,7 @@ species people
 	}
 
 	//Check if the agent is out. If it the case, dependant if respawn is actived or not, it delte the agent or replace it 
-	reflex sortie
+	action sortie
 	{
 		if isRespawn 
 		{
@@ -354,7 +375,7 @@ species people
 	}
 	
 	//Choose the destination point
-	reflex aim
+	action aim
 	{
 		//HEREif((bottleneckSize >= spaceWidth) or (group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
 		if((bottleneckSize >= spaceWidth) or (group = 0 and location.x < 2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
@@ -365,11 +386,13 @@ species people
 	}
 
 	//Calculation of the force and moveent of the agent
-	reflex step
+	action computeVelocity
 	{	
 		//Save the current distance to the aim before any move
-		lastDistanceToAim <- self.location distance_to aim;
-		
+		if(cycle mod (1/deltaT) <= 0.001)
+		{
+			lastDistanceToAim <- self.location distance_to aim;
+		}
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
@@ -379,9 +402,12 @@ species people
 		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
 
 		//Compute forces
-		people_forces <- people_repulsion_force_function();
-		wall_forces <-  wall_repulsion_force_function();
-		fluctuation_forces <- fluctuation_term_function();
+		do  people_repulsion_force_function;
+		do wall_repulsion_force_function;
+		do fluctuation_term_function;
+//		people_forces <- people_repulsion_force_function();
+//		wall_forces <-  wall_repulsion_force_function();
+//		fluctuation_forces <- fluctuation_term_function();
 
 		
 
@@ -399,9 +425,16 @@ species people
 			actual_velocity <- {actual_velocity.x*max_velocity/norm_actual_velocity,actual_velocity.y*max_velocity/norm_actual_velocity};
 		}
 
+	}
+	
+	action mouvement
+	{
 		//Movement
 		location <- { location.x + actual_velocity.x*deltaT, location.y + actual_velocity.y*deltaT };
-		
+	}
+	
+	action computeNervousness
+	{
 		//Calculate the current nervousness
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
@@ -409,7 +442,6 @@ species people
 		//nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speeddesired_speed*deltaT);
 		nervousness <- 1-((orientedSpeed)/(desired_speed*deltaT));
 		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
-		
 	}
 
 	aspect default

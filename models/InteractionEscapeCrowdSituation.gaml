@@ -50,7 +50,7 @@ global
 	float friction <- 240000.0;
 	
 	//pedestrian caracteristics
-	float pedSize <- 0.25;
+	float pedSize <- 0.5;
 	float pedDesiredSpeed min: 0.5 max: 10.0 <- 1.34;
 
 	//Space shape
@@ -90,9 +90,12 @@ global
 		ask people {
 			do mouvement;
 		}
+		if(cycle mod (1/deltaT) <= 0.001)
+		{
 		ask people parallel:true{
 			do computeNervousness;
 //			do colorChoice;
+		}
 		}
 		ask people parallel:true{
 //			do colorPropagation;
@@ -222,7 +225,7 @@ species people
               
 		loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 		{
-	   		maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};    
+	   		maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};    
 		}
 		
 		color <- d_color;
@@ -388,12 +391,12 @@ species people
 		if(cycle mod (1/deltaT) <= 0.001)
 		{
 
-			normal_fluctuation <- { gauss(0,0.1),gauss(0,0.1)};
+			normal_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};
 			maximum_fluctuation <- {0,0};
 			          
 			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 			{
-				maximum_fluctuation <- { gauss(0,2.5),gauss(0,2.5)};
+				maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};
 			}
 		}
 		   		   	
@@ -404,8 +407,10 @@ species people
 	action computeVelocity
 	{	
 		//Save the current distance to the aim before any move
-		lastDistanceToAim <- self.location distance_to aim;
-		
+		if(cycle mod (1/deltaT) <= 0.001)
+		{
+			lastDistanceToAim <- self.location distance_to aim;
+		}
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
