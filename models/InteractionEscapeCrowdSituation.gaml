@@ -21,6 +21,7 @@ global
 	bool isFluctuation  <- false;
 	bool headless <- false;
 	string type;
+	string fluctuationType;
 
 	//space dimension
 	int spaceWidth min: 2 <- 7;
@@ -50,8 +51,9 @@ global
 	float friction <- 240000.0;
 	
 	//pedestrian caracteristics
-	float pedSize <- 0.5;
+	float pedSize <- 0.25;
 	float pedDesiredSpeed min: 0.5 max: 10.0 <- 1.34;
+	float pedMaxSpeed;
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
@@ -63,6 +65,8 @@ global
 	//Agent creation
 	init
 	{
+		pedMaxSpeed <- pedDesiredSpeed*1.3;
+		
 		create people number: number_of_people;
 		if bottleneckSize <= spaceWidth {
 			create wall number: number_of_walls;
@@ -387,27 +391,37 @@ species people
 	action fluctuation_term_function
    {
 		if !isFluctuation {return {0.0,0.0};}
-		//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
-		if(cycle mod (1/deltaT) <= 0.001)
+		if (fluctuationType = "Vector")
 		{
-
-			normal_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};
-			maximum_fluctuation <- {0,0};
-			          
-			loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+			//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
+			if(cycle mod (1/deltaT) <= 0.001)
 			{
-				maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};
+	
+				normal_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};
+				maximum_fluctuation <- {0,0};
+				          
+				loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+				{
+					maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};
+				}
 			}
+			
+			fluctuation_forces <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
+		}
+		else if (fluctuationType = "Speed")
+		{
+			desired_speed <- (1-nervousness)*pedDesiredSpeed + nervousness*pedMaxSpeed;
+			fluctuation_forces <- {0.0,0.0};
 		}
 		   		   	
-		fluctuation_forces <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
+		
    } 
 
 	//Calculation of the force and moveent of the agent
 	action computeVelocity
 	{	
 		//Save the current distance to the aim before any move
-		if(cycle mod (1/deltaT) <= 0.001)
+		if(cycle mod (1.0/deltaT) <= 0.001)
 		{
 			lastDistanceToAim <- self.location distance_to aim;
 		}
@@ -416,13 +430,14 @@ species people
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
 		desired_direction <- { (aim.x - location.x) / (norme + 0.000000001), (aim.y - location.y) / (norme + 0.000000001) };
 
-		//Goal attraction force
-		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
-
 		//Compute forces
 		do  people_repulsion_force_function;
 		do wall_repulsion_force_function;
 		do fluctuation_term_function;
+
+		//Goal attraction force
+		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
+
 //		people_forces <- people_repulsion_force_function();
 //		wall_forces <-  wall_repulsion_force_function();
 //		fluctuation_forces <- fluctuation_term_function();
@@ -438,6 +453,7 @@ species people
 		
 		actual_velocity <- { actual_velocity.x + force_sum.x*deltaT, actual_velocity.y + force_sum.y*deltaT };
 		float norm_actual_velocity <- norm(actual_velocity);
+		max_velocity <- 1.3 * desired_speed;
 		if(norm_actual_velocity>max_velocity )
 		{
 			actual_velocity <- {actual_velocity.x*max_velocity/norm_actual_velocity,actual_velocity.y*max_velocity/norm_actual_velocity};
@@ -559,6 +575,7 @@ experiment helbingPanicSimulation type: gui
 {
 	parameter 'Headless mode' var:headless category:"Simulation parameter";
 	parameter 'Generation type' var: type among:["random","lane"] init:"random" category:"Simulation parameter" ;
+	parameter 'Fluctuation type' var: fluctuationType among:["Speed","Vector"] init:"Vector" category:"Simulation parameter" ;
 	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second";
 	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second" slider:false;
 	parameter 'Is Different group ?' var: isDifferentGroup category:"Simulation parameter";
