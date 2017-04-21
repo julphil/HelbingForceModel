@@ -65,7 +65,8 @@ global
 	//Agent creation
 	init
 	{
-		pedMaxSpeed <- pedDesiredSpeed*1.3;
+//		pedMaxSpeed <- pedDesiredSpeed*1.3;
+		pedMaxSpeed <- 7.0;
 		
 		create people number: number_of_people;
 		if bottleneckSize <= spaceWidth {
@@ -94,12 +95,12 @@ global
 		ask people {
 			do mouvement;
 		}
-		if(cycle mod (1/deltaT) <= 0.001)
-		{
+//		if(/*cycle mod (1/deltaT) <= 0.001 and*/ cycle > relaxation/deltaT)
+//		{
 		ask people parallel:true{
 			do computeNervousness;
 //			do colorChoice;
-		}
+//		}
 		}
 		ask people parallel:true{
 //			do colorPropagation;
@@ -138,6 +139,7 @@ species people
     float lastDistanceToAim;
     float orientedSpeed;
     float cumuledOrientedSpeed;
+    list<float> lOrientedSpeed;
     int presenceTime <- 0;
     
     //Goal attraction force
@@ -305,10 +307,10 @@ species people
 				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
 				float repulsion <- Ai * exp(-distance / Bi);
 				
-				if (vision > 0.90 and distance < 5)
-				{
-					add self to: myself.interaction;
-				}
+//				if (vision > 0.90 and distance < 5)
+//				{
+//					add self to: myself.interaction;
+//				}
 				
 				//Social force
 				social_repulsion_force <- {
@@ -421,10 +423,10 @@ species people
 	action computeVelocity
 	{	
 		//Save the current distance to the aim before any move
-		if(cycle mod (1.0/deltaT) <= 0.001)
-		{
+//		if(cycle mod (1.0/deltaT) <= 0.001)
+//		{
 			lastDistanceToAim <- self.location distance_to aim;
-		}
+//		}
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
@@ -469,12 +471,38 @@ species people
 	
 	action computeNervousness
 	{
-		//Calculate the current nervousness
+		if(cycle mod (1/deltaT) <= 0.001)
+		{
+		 cumuledOrientedSpeed <- 0.0;
+		 presenceTime <- 0;	
+		}
+		
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
-		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
-		presenceTime <- presenceTime  + 1;
-		//nervousness <- 1-((cumuledOrientedSpeed/(presenceTime*deltaT))/desired_speeddesired_speed*deltaT);
-		nervousness <- 1-((orientedSpeed)/(desired_speed*deltaT));
+		
+		
+						
+		if cycle <= 10
+		{
+			presenceTime <- cycle +1;
+		}
+		else
+		{
+			 remove first(lOrientedSpeed) from: lOrientedSpeed;
+			 presenceTime <- 10;
+		}
+		add orientedSpeed to:lOrientedSpeed;
+		
+		float sum <- 0.0;
+		loop i over:lOrientedSpeed {
+			sum <- sum + i;
+		}
+		write length(lOrientedSpeed);
+		//Calculate the current nervousness
+//		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
+//		presenceTime <- presenceTime  + 1;
+//		nervousness <- 1-((cumuledOrientedSpeed/(presenceTime))/(desired_speed*deltaT));
+		nervousness <- 1-((sum/(presenceTime))/(desired_speed*deltaT));
+//		nervousness <- 1-((orientedSpeed)/(desired_speed*deltaT));
 		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
 	}
 	
@@ -648,7 +676,7 @@ experiment helbingPanicSimulation_uniqueAgent type: gui parent:helbingPanicSimul
 	parameter 'Pedestrian number' var: number_of_people init:1;
 	parameter 'Space length' var: spaceLength init:10;
 	parameter 'Space width' var: spaceWidth init:10;
-	parameter 'Bottleneck size' var: bottleneckSize init:0.0;
+	parameter 'Bottleneck size' var: bottleneckSize init:10.0;
 }
 
 //On group trying to pass a bottle neck
