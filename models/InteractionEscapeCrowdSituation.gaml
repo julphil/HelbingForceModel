@@ -60,6 +60,7 @@ global
 	
 	//Simulation survey
 	int nb_people <- number_of_people;
+	list<rgb> lcolor;
 	
 	
 	//Agent creation
@@ -95,16 +96,24 @@ global
 		ask people {
 			do mouvement;
 		}
-//		if(/*cycle mod (1/deltaT) <= 0.001 and*/ cycle > relaxation/deltaT)
-//		{
 		ask people parallel:true{
 			do computeNervousness;
-//			do colorChoice;
-//		}
+		}
+		ask people parallel:true
+		{
+			do colorChoice;
 		}
 		ask people parallel:true{
-//			do colorPropagation;
+			do colorPropagation;
 		}
+		lcolor <- [];
+		ask people
+		{
+			if !(lcolor contains self.color)
+			{
+				add self.color to: lcolor;
+			}
+		} 
 	}
 	
 	//If agents does not respawn, pause the simulation at the time they're  no more agent in the simulation
@@ -118,6 +127,8 @@ species people
 {
 	rgb d_color;
 	rgb color;
+	rgb n_color;
+	
 	float size;
 	int group;
 	float nervousness <- 0.0;
@@ -163,7 +174,8 @@ species people
 		//In this version, you can have one group of black agent going left. Or two group with the same black group plus a yellow group going rigth
 		if nd mod 2 = 0 or !isDifferentGroup
 		{
-			d_color <- # black;
+			//d_color <- # black;
+			d_color <- rnd_color(255);
 			if(type="random") {
 //				HERElocation <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 				location <- { spaceLength - rnd(spaceLength - 3), rnd(spaceWidth - (1 + size)*2) + 1 + size };
@@ -235,6 +247,7 @@ species people
 		}
 		
 		color <- d_color;
+		n_color <- d_color;
 	}
 
 	action interactionClean
@@ -307,10 +320,10 @@ species people
 				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
 				float repulsion <- Ai * exp(-distance / Bi);
 				
-//				if (vision > 0.90 and distance < 5)
-//				{
-//					add self to: myself.interaction;
-//				}
+				if (vision > 0.90 and distance < 5)
+				{
+					add self to: myself.interaction;
+				}
 				
 				//Social force
 				social_repulsion_force <- {
@@ -470,60 +483,50 @@ species people
 	}
 	
 	action computeNervousness
-	{
-		if(cycle mod (1/deltaT) <= 0.001)
-		{
-		 cumuledOrientedSpeed <- 0.0;
-		 presenceTime <- 0;	
-		}
-		
+	{	
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		
 		
-						
-		if cycle <= 10
+		if cycle > relaxation/deltaT
 		{
-			presenceTime <- cycle +1;
-		}
-		else
-		{
-			 remove first(lOrientedSpeed) from: lOrientedSpeed;
-			 presenceTime <- 10;
-		}
-		add orientedSpeed to:lOrientedSpeed;
-		
-		float sum <- 0.0;
-		loop i over:lOrientedSpeed {
-			sum <- sum + i;
-		}
-		write length(lOrientedSpeed);
-		//Calculate the current nervousness
-//		cumuledOrientedSpeed <- cumuledOrientedSpeed + orientedSpeed;
-//		presenceTime <- presenceTime  + 1;
-//		nervousness <- 1-((cumuledOrientedSpeed/(presenceTime))/(desired_speed*deltaT));
-		nervousness <- 1-((sum/(presenceTime))/(desired_speed*deltaT));
-//		nervousness <- 1-((orientedSpeed)/(desired_speed*deltaT));
+			if cycle < 10+relaxation/deltaT
+			{
+				presenceTime <- cycle -relaxation/deltaT;
+			}
+			else
+			{
+				 remove first(lOrientedSpeed) from: lOrientedSpeed;
+				 presenceTime <- 10;
+			}
+			add orientedSpeed to:lOrientedSpeed;
+			
+			float sum <- 0.0;
+			loop i over:lOrientedSpeed {
+				sum <- sum + i;
+			}
+			//Calculate the current nervousness
+			nervousness <- 1-((sum/(presenceTime))/(desired_speed*deltaT));
 		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
+		}
 	}
 	
 	action colorChoice
 	{
-		color <- d_color;
-		if nervousness > 0.8
+		if((rnd(1000) / 1000)< nervousness)
+//		if((rnd(1000) / 1000)< 0.5)
 		{
-			color <- #purple;
+//			people voisin <- interaction closest_to self;
+people voisin <- one_of(interaction);
+			if voisin != nil
+			{
+				n_color <- voisin.color;
+			}
 		}
 }
 	
 	action colorPropagation
 	{
-		ask interaction
-		{
-			if(color = #purple or color = #red)
-			{
-				myself.color <- #red;
-			}
-		}
+		color <- n_color;
 	}
 
 	aspect default
@@ -656,6 +659,13 @@ experiment helbingPanicSimulation type: gui
 			chart "Average speed" {
 				data "Average speed" value: mean(people collect norm(each.actual_velocity));
 				data "Average directed speed" value: mean(people collect each.orientedSpeed)/deltaT;
+			}
+		}
+		
+		display SocialForceModel_nbColor
+		{
+			chart "Color number" {
+				data "Average speed" value: length(lcolor);
 			}
 		}
 	}
