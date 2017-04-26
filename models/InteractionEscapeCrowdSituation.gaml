@@ -575,6 +575,30 @@ species people
 					n_color <- max.key;
 				}
 			}
+			else if 	interactionType = "Mean"
+			{
+				int r <-0;
+				int g <-0;
+				int b <-0;
+				int le <- length(interaction);
+				
+				if interaction contains nil
+				{
+					remove nil all:true  from: interaction; 	
+				}
+				
+				loop p over:interaction {
+					if !dead(p)
+					{
+						r <- r+ p.color.red;
+						g <- g+ p.color.green;
+						b <- b+ p.color.blue;
+					}
+				}
+				
+				n_color <- rgb(r/le,g/le,b/le);
+				
+			}		
 		}
 }
 	
