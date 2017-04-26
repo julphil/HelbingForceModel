@@ -22,10 +22,14 @@ global
 	bool headless <- false;
 	string type;
 	string fluctuationType;
+	
+	//Propagation parameter
 	string stateChangingType;
 	float  stateChangingThreshold min:0.01 max:1.0;
 	string neighbourType;
 	string interactionType;
+	bool is360;
+	float perceptionRange min:-1.0 max:30.0;
 
 	//space dimension
 	int spaceWidth min: 2 <- 7;
@@ -325,7 +329,7 @@ species people
 				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
 				float repulsion <- Ai * exp(-distance / Bi);
 				
-				if (vision > 0.90 and distance < 5)
+				if ((perceptionRange < 0.0 or distance < perceptionRange) and (is360 or vision > 0.90 ))
 				{
 					add self to: myself.interaction;
 				}
@@ -490,7 +494,7 @@ species people
 		{
 			if cycle < 10+relaxation/deltaT
 			{
-				presenceTime <- cycle -relaxation/deltaT;
+				presenceTime <- cycle -relaxation/deltaT as int;
 			}
 			else
 			{
@@ -697,6 +701,8 @@ experiment helbingPanicSimulation type: gui
 	parameter 'State changing threshold' var: stateChangingThreshold category:"Interaction parameter" slider:false init:0.5;
 	parameter 'Interaction choice' var: interactionType among:["One neighbour","Majority","Mean"] init:"One neighbour" category:"Interaction parameter" ;
 	parameter 'Neighbour choice' var: neighbourType among:["Closest","Random"] init:"Random" category:"Interaction parameter" ;
+	parameter 'Has a 360° perception' var:is360 init:true category:"Interaction parameter" ;
+	parameter 'Perception range' var:perceptionRange init:2.0 category:"Interaction parameter" slider:false;
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
