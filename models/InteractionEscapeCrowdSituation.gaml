@@ -22,6 +22,10 @@ global
 	bool headless <- false;
 	string type;
 	string fluctuationType;
+	string stateChangingType;
+	float  stateChangingThreshold min:0.01 max:1.0;
+	string neighbourType;
+	string interactionType;
 
 	//space dimension
 	int spaceWidth min: 2 <- 7;
@@ -92,6 +96,7 @@ global
 			do interactionClean;
 			do aim;	
 			do computeVelocity;
+			
 		}
 		ask people {
 			do mouvement;
@@ -358,6 +363,7 @@ species people
 				}
 			}
 		}
+
 		people_forces <- {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
@@ -436,10 +442,7 @@ species people
 	action computeVelocity
 	{	
 		//Save the current distance to the aim before any move
-//		if(cycle mod (1.0/deltaT) <= 0.001)
-//		{
-			lastDistanceToAim <- self.location distance_to aim;
-//		}
+		lastDistanceToAim <- self.location distance_to aim;
 
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
@@ -452,10 +455,6 @@ species people
 
 		//Goal attraction force
 		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
-
-//		people_forces <- people_repulsion_force_function();
-//		wall_forces <-  wall_repulsion_force_function();
-//		fluctuation_forces <- fluctuation_term_function();
 
 		
 
@@ -512,14 +511,69 @@ species people
 	
 	action colorChoice
 	{
-		if((rnd(1000) / 1000)< nervousness)
-//		if((rnd(1000) / 1000)< 0.5)
+		if( !empty(interaction) and ( 
+			(stateChangingType = "Random based on nervousness" and (rnd(1000) / 1000)< nervousness) or
+			(stateChangingType = "Pure random" and (rnd(1000) / 1000)> stateChangingThreshold) or
+			(stateChangingType = "Nervousness threshold" and nervousness > stateChangingThreshold)
+			)
+		)
 		{
-//			people voisin <- interaction closest_to self;
-people voisin <- one_of(interaction);
-			if voisin != nil
+			if interactionType = "One neighbour"
 			{
-				n_color <- voisin.color;
+				//One neighbour
+				people neighbour<- nil;
+				if neighbourType = "Closest"
+				{
+					neighbour <- interaction closest_to self;				
+				} else
+				{
+					neighbour <- one_of(interaction);
+				}
+				
+				
+				if neighbour != nil
+				{
+					n_color <- neighbour.color;
+				}
+			}
+			else if interactionType = "Majority"
+			{
+				map<rgb,int> colors;
+				
+				if interaction contains nil
+				{
+					remove nil all:true  from: interaction; 	
+				}
+				
+				//Majority
+				loop p over:interaction {
+					if !dead(p)
+					{
+						rgb c <- p.color;
+						if(colors contains c){
+							put colors[c]+1 at:c in:colors;
+						}
+						else
+						{
+							add c::1 to:colors;
+						}
+					}
+				}
+				
+				pair<rgb,int> max <- nil;
+				
+				loop c over:colors.keys{
+					int value <- colors[c];
+					if max = nil or value > max.value
+					{
+						max <- c::value;
+					}
+				}
+				
+				if max.key != nil
+				{
+					n_color <- max.key;
+				}
 			}
 		}
 }
@@ -614,6 +668,11 @@ experiment helbingPanicSimulation type: gui
 	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter";
 	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
 	parameter 'Pedestrian speed' var: pedDesiredSpeed category:"Simulation parameter" unit:"m.s-1" slider:false;
+	
+	parameter 'State changing type' var: stateChangingType among:["Pure random","Random based on nervousness","Nervousness threshold"] init:"Pure random" category:"Interaction parameter" ;
+	parameter 'State changing threshold' var: stateChangingThreshold category:"Interaction parameter" slider:false init:0.5;
+	parameter 'Interaction choice' var: interactionType among:["One neighbour","Majority","Mean"] init:"One neighbour" category:"Interaction parameter" ;
+	parameter 'Neighbour choice' var: neighbourType among:["Closest","Random"] init:"Random" category:"Interaction parameter" ;
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
