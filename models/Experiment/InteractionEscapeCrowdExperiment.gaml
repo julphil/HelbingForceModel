@@ -1,5 +1,5 @@
 /**
-* Name: InteractionEscapeCrowdExperiement
+* Name: InteractionEscapeCrowdExperiment
 * Author: julien
 * Description: 
 * Tags: Tag1, Tag2, TagN
@@ -7,7 +7,7 @@
 
 model InteractionEscapeCrowdExperiment
 
-import "../Scheduler/InteractionSheduler.gaml"
+import "../Scheduler/InteractionScheduler.gaml"
 
 
 

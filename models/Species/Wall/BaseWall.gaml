@@ -1,11 +1,11 @@
 /**
-* Name: InteractionEscapeCrowdSpeciesWall
+* Name: BaseWall
 * Author: julien
 * Description: 
 * Tags: Tag1, Tag2, TagN
 */
 
-model SpeciesWall
+model BaseWall
 
 import "../../Parameter/BaseParameter.gaml"
 

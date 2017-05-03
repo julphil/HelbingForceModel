@@ -1,11 +1,11 @@
 /**
-* Name: InteractionEscapeCrowdSpeciePeople
+* Name:  PanicPeople
 * Author: julien
 * Description: 
 * Tags: Tag1, Tag2, TagN
 */
 
-model InteractionPeople
+model PanicPeople
 
 import "BasePeople.gaml"
 import "../../Parameter/PanicParameter.gaml"
@@ -205,6 +205,14 @@ species panicPeople parent:basePeople
 		   		   	
 		
    } 
+   
+   action computeForce
+	{
+		//Compute forces
+		do  people_repulsion_force_function;
+		do wall_repulsion_force_function;
+		do fluctuation_term_function;
+	}
 
 	//Calculation of the force and moveent of the agent
 	action computeVelocity
@@ -215,16 +223,10 @@ species panicPeople parent:basePeople
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
 		desired_direction <- { (aim.x - location.x) / (norme + 0.000000001), (aim.y - location.y) / (norme + 0.000000001) };
-
-		//Compute forces
-		do  people_repulsion_force_function;
-		do wall_repulsion_force_function;
-		do fluctuation_term_function;
+		
 
 		//Goal attraction force
 		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
-
-		
 
 		// Sum of the forces
 		point force_sum <- {

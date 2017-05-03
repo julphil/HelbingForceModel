@@ -1,13 +1,13 @@
 /**
-* Name: InteractionEscapeCrowdExperiement
+* Name: BasicCrowdExperiment
 * Author: julien
 * Description: 
 * Tags: Tag1, Tag2, TagN
 */
 
-model InteractionEscapeCrowdExperiment
+model BasicCrowdExperiment
 
-import "../Scheduler/BaseSheduler.gaml"
+import "../Scheduler/BaseScheduler.gaml"
 
 
 

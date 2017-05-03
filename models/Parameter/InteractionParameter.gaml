@@ -1,11 +1,11 @@
 /**
-* Name: InteractionEscapeCrowdParameter
+* Name: InteractionParameter
 * Author: julien
 * Description: 
 * Tags: Tag1, Tag2, TagN
 */
 
-model InteractionEscapeCrowdParameter
+model InteractionParameter
 
 global
 {

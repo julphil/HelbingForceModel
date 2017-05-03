@@ -1,5 +1,5 @@
 /**
-* Name: InteractionEscapeCrowdSpeciePeople
+* Name: InteractionPeople
 * Author: julien
 * Description: 
 * Tags: Tag1, Tag2, TagN

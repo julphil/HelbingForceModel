@@ -1,5 +1,5 @@
 /**
-* Name: InteractionEscapeCrowdParameter
+* Name: PanicParameter
 * Author: julien
 * Description: 
 * Tags: Tag1, Tag2, TagN
