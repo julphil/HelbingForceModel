@@ -56,5 +56,7 @@ global
 
 	//Space shape
 	geometry shape <- rectangle(spaceLength, spaceWidth);
+	
+	int lastCycle <- -1;
 }
 

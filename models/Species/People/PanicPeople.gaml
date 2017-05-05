@@ -188,7 +188,6 @@ species panicPeople parent:basePeople
 	
 				normal_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};
 				maximum_fluctuation <- {0,0};
-				          
 				loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
 				{
 					maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};
@@ -250,7 +249,7 @@ species panicPeople parent:basePeople
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		
 		
-		if cycle > relaxation/deltaT
+		if cycle > round(relaxation/deltaT)
 		{
 			if cycle < 10+relaxation/deltaT
 			{

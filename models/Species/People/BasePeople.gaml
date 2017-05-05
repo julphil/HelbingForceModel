@@ -306,7 +306,7 @@ species basePeople
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		
 		
-		if cycle > relaxation/deltaT
+		if cycle > round(relaxation/deltaT)
 		{
 			if cycle < 10+relaxation/deltaT
 			{

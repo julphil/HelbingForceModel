@@ -52,7 +52,7 @@ experiment helbingPanicSimulation type: gui
 			
 			
 		}
-		monitor "Nb People" value:nb_people;
+		
 		
 		display SocialForceModel_averageSpeed
 		{
@@ -61,6 +61,8 @@ experiment helbingPanicSimulation type: gui
 				data "Average directed speed" value: mean(basePeople collect each.orientedSpeed)/deltaT;
 			}
 		}
+		monitor "Nb People" value:nb_people;
+		monitor "time" value:cycle*deltaT;
 		
 	}
 

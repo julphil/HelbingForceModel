@@ -9,8 +9,6 @@ model EscapeCrowdExperiment
 
 import "../Scheduler/PanicScheduler.gaml"
 
-
-
 experiment helbingPanicSimulation type: gui
 {
 	parameter 'Headless mode' var:headless category:"Simulation parameter";
@@ -23,6 +21,7 @@ experiment helbingPanicSimulation type: gui
 	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter";
 	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
 	parameter 'Pedestrian speed' var: pedDesiredSpeed category:"Simulation parameter" unit:"m.s-1" slider:false;
+	parameter 'Pedestrian maximum speed' var: pedMaxSpeed category:"Simulation parameter" unit:"m.s-1" slider:false init:6.0;
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
@@ -45,7 +44,7 @@ experiment helbingPanicSimulation type: gui
 			
 		}
 		
-		display SocialForceModel_NBinteractionPeople
+		display SocialForceModel_NBPeople
 		{
 			chart "Number of interactionPeoples still inside " {
 				data "nb_People" value: nb_panicPeople;
@@ -54,7 +53,8 @@ experiment helbingPanicSimulation type: gui
 			
 			
 		}
-		monitor "NbnPeople" value:nb_panicPeople;
+		monitor "Nb people" value:nb_panicPeople;
+		monitor "Leaving time" value:lastCycle*deltaT;
 		
 		display SocialForceModel_nervousnness
 		{
