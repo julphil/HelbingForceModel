@@ -50,7 +50,8 @@ global
 	float friction <- 240000.0;
 	
 	//pedestrian caracteristics
-	float pedSize <- 0.25;
+	float pedSizeMin <- 0.25;
+	float pedSizeMax <- 0.35;
 	float pedDesiredSpeed min: 0.5 max: 10.0 <- 1.34;
 	float pedMaxSpeed;
 

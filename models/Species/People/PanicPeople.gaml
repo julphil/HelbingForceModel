@@ -23,7 +23,7 @@ species panicPeople parent:basePeople
  	
 	init
 	{
-		self.size <- pedSize;
+		self.size <- rnd(pedSizeMin,pedSizeMax);
 		self.desired_speed <- pedDesiredSpeed;
 		max_velocity <- 1.3 * desired_speed;
 		
