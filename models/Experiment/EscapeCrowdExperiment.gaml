@@ -22,6 +22,7 @@ experiment helbingPanicSimulation type: gui
 	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
 	parameter 'Pedestrian speed' var: pedDesiredSpeed category:"Simulation parameter" unit:"m.s-1" slider:false;
 	parameter 'Pedestrian maximum speed' var: pedMaxSpeed category:"Simulation parameter" unit:"m.s-1" slider:false init:6.0;
+	parameter "Display force" var:arrow category:"Simulation parameter" init:false;
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
@@ -49,12 +50,9 @@ experiment helbingPanicSimulation type: gui
 			chart "Number of interactionPeoples still inside " {
 				data "nb_People" value: nb_panicPeople;
 				
-			}
-			
-			
+			}	
 		}
-		monitor "Nb people" value:nb_panicPeople;
-		monitor "Leaving time" value:lastCycle*deltaT;
+		
 		
 		display SocialForceModel_nervousnness
 		{
@@ -70,6 +68,9 @@ experiment helbingPanicSimulation type: gui
 				data "Average directed speed" value: mean(panicPeople collect each.orientedSpeed)/deltaT;
 			}
 		}
+		
+		monitor "Nb people" value:nb_panicPeople;
+		monitor "Leaving time" value:lastCycle*deltaT;
 	}
 
 }

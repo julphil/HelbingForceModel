@@ -23,76 +23,6 @@ species panicPeople parent:basePeople
  	
 	init
 	{
-		self.size <- rnd(pedSizeMin,pedSizeMax);
-		self.desired_speed <- pedDesiredSpeed;
-		max_velocity <- 1.3 * desired_speed;
-		
-		shape <- circle(size);
-		//In this version, you can have one group of black agent going left. Or two group with the same black group plus a yellow group going rigth
-		if nd mod 2 = 0 or !isDifferentGroup
-		{
-			//d_color <- # black;
-			d_color <- rnd_color(255);
-			if(type="random") {
-//				HERElocation <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				location <- { spaceLength - rnd(spaceLength - 3), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				if (number_of_people > 1)
-				{
-					loop while:( agent_closest_to(self).location distance_to self.location < size*2){
-						location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-					}
-				}
-			} //random location in a halfspace
-				else if type = "lane" //lane configuration starting location
-				{
-					if(nd <20) {
-						location <- {nd+1,2.85};
-					} else {
-						location <- {nd-20,4.1};
-				}
-			}
-			
-			if (bottleneckSize < spaceWidth)
-			{
-				//HEREaim <- { spaceLength/2 -0.5, spaceWidth/2};
-				aim <- { 2 -0.5, spaceWidth/2};
-			} else {
-				aim <- {-size*2,location.y};
-			}
-			group <- 0;
-		} else
-		{
-			d_color <- # yellow;
-			if type = "random" {
-				location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				if (number_of_people > 1)
-				{
-					loop while:(agent_closest_to(self).location distance_to self.location < size*2){
-						location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-					}
-				}
-			} //random location in a halfspace
-			else if type = "lane" //lane configuration starting location
-			{
-				if(nd <20) {
-					location <- {nd,1.6};
-				} else {
-					location <- {nd-20,5.35};
-				}
-			}
-			if (bottleneckSize < spaceWidth)
-			{
-				aim <- { spaceLength/2 + 0.5, spaceWidth/2 };
-			} else {
-				aim <- {spaceLength+size*2,location.y};
-			}
-			group <- 1;
-		}
-		 
-		nd <- nd + 1;
-		desired_direction <- {
-		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
-		};
 		
 		//Initilasation of the noise
 		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
@@ -103,7 +33,6 @@ species panicPeople parent:basePeople
 	   		maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};    
 		}
 		
-		color <- d_color;
 	}
 	
 	//Force functions
@@ -267,7 +196,7 @@ species panicPeople parent:basePeople
 				sum <- sum + i;
 			}
 			//Calculate the current nervousness
-			nervousness <- 1-((sum/(presenceTime))/(desired_speed*deltaT));
+			nervousness <- 1-((sum/(presenceTime))/(pedDesiredSpeed/*desired_speed*/*deltaT));
 		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
 		}
 	}
@@ -277,11 +206,13 @@ species panicPeople parent:basePeople
 		
 
 		draw circle(size) color: color;
-		draw line([{location.x+ desired_direction.x,location.y + desired_direction.y},{location.x,location.y}]) color: #blue begin_arrow:0.1;
-		draw line([{location.x+ goal_attraction_force.x*deltaT,location.y + goal_attraction_force.y*deltaT},{location.x,location.y}]) color: #pink begin_arrow:0.1;
-		draw line([{location.x+ people_forces.x*deltaT/mass,location.y + people_forces.y*deltaT/mass},{location.x,location.y}]) color: #purple begin_arrow:0.1;
-		draw line([{location.x+ wall_forces.x*deltaT,location.y + wall_forces.y*deltaT},{location.x,location.y}]) color: #orange begin_arrow:0.1;
-		draw line([{location.x+ actual_velocity.x,location.y + actual_velocity.y},{location.x,location.y}]) color: #red begin_arrow:0.1;
+		if arrow{
+			draw line([{location.x+ desired_direction.x,location.y + desired_direction.y},{location.x,location.y}]) color: #blue begin_arrow:0.1;
+			draw line([{location.x+ goal_attraction_force.x*deltaT,location.y + goal_attraction_force.y*deltaT},{location.x,location.y}]) color: #pink begin_arrow:0.1;
+			draw line([{location.x+ people_forces.x*deltaT/mass,location.y + people_forces.y*deltaT/mass},{location.x,location.y}]) color: #purple begin_arrow:0.1;
+			draw line([{location.x+ wall_forces.x*deltaT,location.y + wall_forces.y*deltaT},{location.x,location.y}]) color: #orange begin_arrow:0.1;
+			draw line([{location.x+ actual_velocity.x,location.y + actual_velocity.y},{location.x,location.y}]) color: #red begin_arrow:0.1;
+		}
 	}
 
 }

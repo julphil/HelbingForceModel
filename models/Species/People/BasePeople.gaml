@@ -50,15 +50,21 @@ species basePeople
 		//In this version, you can have one group of black agent going left. Or two group with the same black group plus a yellow group going rigth
 		if nd mod 2 = 0 or !isDifferentGroup
 		{
-			//d_color <- # black;
-			d_color <- rnd_color(255);
+			if(isDifferentGroup)
+			{
+				d_color <- # black;	
+			}
+			else
+			{
+				d_color <- rnd_color(255);
+			}
 			if(type="random") {
 //				HERElocation <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 				location <- { spaceLength - rnd(spaceLength - 3), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 				if (number_of_people > 1)
 				{
 					loop while:( agent_closest_to(self).location distance_to self.location < size*2){
-						location <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
+						location <- { spaceLength - rnd(spaceLength - 3), rnd(spaceWidth - (1 + size)*2) + 1 + size };
 					}
 				}
 			} //random location in a halfspace
@@ -151,12 +157,26 @@ species basePeople
 	//Choose the destination point
 	action aim
 	{
+		float aimX; 
+		float aimY;
 		//HEREif((bottleneckSize >= spaceWidth) or (group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
 		if((bottleneckSize >= spaceWidth) or (group = 0 and location.x < 2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
-			aim <- {spaceLength*group+size*2*group,location.y};
-		} else  { //Don't pass it
-			aim <- {aim.x,spaceWidth/2};
+			aimX <- spaceLength*group+size*2*group;
+			aimY <- location.y;
+		} else  { 
+			if location.x > 4.0 or location.y < spaceWidth/2 - bottleneckSize/2 or location.y > spaceWidth/2 + bottleneckSize/2
+			{
+				aimX <- 3.0;
+				aimY <- spaceWidth/2;
+			}
+			else
+			{
+				aimX <- 1.5;
+				aimY <-  spaceWidth/2;
+			}
 		}
+		
+		aim <- {aimX,aimY};
 	}
 
 	//Force functions
@@ -250,6 +270,10 @@ species basePeople
 				float deltaVitesseTangencielle <- 
 					( -myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
 				
+				float t <- Ai * exp(-distance / Bi);
+				
+				if t >= 2000 
+				{write t;}
 				myself.wall_forces <- {
 					myself.wall_forces.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
 					myself.wall_forces.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)

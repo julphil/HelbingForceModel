@@ -59,5 +59,7 @@ global
 	geometry shape <- rectangle(spaceLength, spaceWidth);
 	
 	int lastCycle <- -1;
+	
+	bool arrow;
 }
 
