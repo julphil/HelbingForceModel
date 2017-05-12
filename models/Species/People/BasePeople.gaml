@@ -219,8 +219,10 @@ species basePeople
 	
 					point tij <- {-nij.y,nij.x};
 					
+					
 					float deltaVitesseTangencielle <- 
 						(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
+						
 					
 					physical_repulsion_force <- {
 						physical_repulsion_force.x + body * theta * nij.x,
@@ -247,6 +249,7 @@ species basePeople
 			{
 				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
 				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y })-myself.size;
+				
 				point nij <- { (myself.location.x - wallClosestPoint.x) / (distance+myself.size), (myself.location.y - wallClosestPoint.y) / (distance+myself.size)};
 				
 				
@@ -267,17 +270,15 @@ species basePeople
 				
 				point tij <- {-nij.y,nij.x};
 				
+				
 				float deltaVitesseTangencielle <- 
-					( -myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
+					(myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
 				
-				float t <- Ai * exp(-distance / Bi);
-				
-				if t >= 2000 
-				{write t;}
 				myself.wall_forces <- {
-					myself.wall_forces.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x + friction * theta * deltaVitesseTangencielle * tij.x), 
-					myself.wall_forces.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y + friction * theta * deltaVitesseTangencielle * tij.y)
+					myself.wall_forces.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x - friction * theta * deltaVitesseTangencielle * tij.x), 
+					myself.wall_forces.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y - friction * theta * deltaVitesseTangencielle * tij.y)
 				};
+
 			}
 		}
 	}
@@ -355,11 +356,13 @@ species basePeople
 		
 
 		draw circle(size) color: color;
+		if arrow{
 		draw line([{location.x+ desired_direction.x,location.y + desired_direction.y},{location.x,location.y}]) color: #blue begin_arrow:0.1;
 		draw line([{location.x+ goal_attraction_force.x*deltaT,location.y + goal_attraction_force.y*deltaT},{location.x,location.y}]) color: #pink begin_arrow:0.1;
 		draw line([{location.x+ people_forces.x*deltaT/mass,location.y + people_forces.y*deltaT/mass},{location.x,location.y}]) color: #purple begin_arrow:0.1;
 		draw line([{location.x+ wall_forces.x*deltaT,location.y + wall_forces.y*deltaT},{location.x,location.y}]) color: #orange begin_arrow:0.1;
 		draw line([{location.x+ actual_velocity.x,location.y + actual_velocity.y},{location.x,location.y}]) color: #red begin_arrow:0.1;
+		}
 	}
 
 }
