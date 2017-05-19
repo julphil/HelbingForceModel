@@ -35,6 +35,22 @@ species panicPeople parent:basePeople
 		
 	}
 	
+	action computeDistance
+	{	
+		ask panicPeople parallel:true 
+		{
+			if self != myself
+			{
+				if(matDistances[int(myself),0] != nil)
+				{
+					myself.matDistances[int(self),0] <- matDistances[int(myself),0];
+				} else {
+					myself.matDistances[int(self),0] <-  norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+				}	
+			}
+		}
+	}
+	
 	//Force functions
 	//Social repulsion force + physical interaction force
 	action people_repulsion_force_function
@@ -49,7 +65,7 @@ species panicPeople parent:basePeople
 		{
 			if self != myself
 			{
-				float distanceCenter <- norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+				float distanceCenter <- matDistances[int(myself),0];
 				float distance <- distanceCenter -(self.size+myself.size);
 				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
 				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);

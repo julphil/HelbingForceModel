@@ -61,5 +61,7 @@ global
 	int lastCycle <- -1;
 	
 	bool arrow;
+	
+	float epsilon <- 0.0000000001;
 }
 

@@ -15,21 +15,24 @@ experiment helbingPanicSimulation type: gui
 {
 	parameter 'Headless mode' var:headless category:"Simulation parameter";
 	parameter 'Generation type' var: type among:["random","lane"] init:"random" category:"Simulation parameter" ;
-	parameter 'Fluctuation type' var: fluctuationType among:["Speed","Vector"] init:"Vector" category:"Simulation parameter" ;
-	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second";
+	parameter 'Fluctuation type' var: fluctuationType among:["Speed","Vector"] init:"Speed" category:"Simulation parameter" ;
+	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second" init: 0.01;
 	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second" slider:false;
 	parameter 'Is Different group ?' var: isDifferentGroup category:"Simulation parameter";
 	parameter 'Respawn' var: isRespawn category:"Simulation parameter";
-	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter";
+	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter" init:true;
 	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
 	parameter 'Pedestrian speed' var: pedDesiredSpeed category:"Simulation parameter" unit:"m.s-1" slider:false;
+	parameter 'Pedestrian maximum speed' var: pedMaxSpeed category:"Simulation parameter" unit:"m.s-1" slider:false init:6.0;
+	parameter "Display force" var:arrow category:"Simulation parameter" init:false;
 	
 	parameter 'State changing type' var: stateChangingType among:["Pure random","Random based on nervousness","Nervousness threshold"] init:"Pure random" category:"Interaction parameter" ;
 	parameter 'State changing threshold' var: stateChangingThreshold category:"Interaction parameter" slider:false init:0.5;
-	parameter 'Interaction choice' var: interactionType among:["One neighbour","Majority","Mean"] init:"One neighbour" category:"Interaction parameter" ;
+	parameter 'Interaction choice' var: interactionType among:["One neighbour","Majority","Mean"] init:"Mean" category:"Interaction parameter" ;
 	parameter 'Neighbour choice' var: neighbourType among:["Closest","Random"] init:"Random" category:"Interaction parameter" ;
 	parameter 'Has a 360° perception' var:is360 init:true category:"Interaction parameter" ;
 	parameter 'Perception range' var:perceptionRange init:2.0 category:"Interaction parameter" slider:false;
+	parameter 'Nervousness transmition' var:isNervousnessTransmition init:true category:"Interaction parameter";
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
@@ -61,7 +64,6 @@ experiment helbingPanicSimulation type: gui
 			
 			
 		}
-		monitor "Nb interactionPeople" value:nb_interactionPeople;
 		
 		display SocialForceModel_nervousnness
 		{
@@ -84,6 +86,9 @@ experiment helbingPanicSimulation type: gui
 				data "Average speed" value: length(lcolor);
 			}
 		}
+		
+		monitor "Nb interactionPeople" value:nb_interactionPeople;
+		monitor "Leaving time" value:lastCycle*deltaT;
 	}
 
 }
@@ -112,7 +117,7 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 	parameter 'Respawn' var: isRespawn init:false;
 	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Space width' var: spaceWidth init:15;
-	parameter 'Bottleneck size' var: bottleneckSize init:1.0;
+	parameter 'Bottleneck size' var: bottleneckSize init:1.2;
 }
 
 //Two group trying to pass a bottleneck in diffrent direction

@@ -16,5 +16,6 @@ global
 	string interactionType;
 	bool is360;
 	float perceptionRange min:-1.0 max:30.0;
+	bool isNervousnessTransmition;
 }
 

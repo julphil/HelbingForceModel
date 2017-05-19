@@ -14,6 +14,8 @@ species interactionPeople parent:panicPeople
 {
 
 	rgb n_color;
+	float neighbourNervoussness;
+	int nbNeighbour;
  
  	//Interaction agent
  	list<interactionPeople> interaction;
@@ -23,9 +25,38 @@ species interactionPeople parent:panicPeople
 		n_color <- d_color;
 	}
 
-	action interactionClean
+	action resetStepValue
 	{
+		matDistances <- nil as_matrix({number_of_people,1});
 		interaction <- [];
+	}
+	
+	action computeDistance
+	{	
+		ask interactionPeople parallel:true 
+		{
+			if self != myself
+			{
+				if(matDistances[int(myself),0] != nil)
+				{
+					myself.matDistances[int(self),0] <- matDistances[int(myself),0];
+				} else {
+					myself.matDistances[int(self),0] <-  norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+				}
+			}
+		}
+		
+	}
+	
+	action setInteraction
+	{
+		ask interactionPeople 
+		{
+			if ((perceptionRange < 0.0 or float(matDistances[int(myself),0]) < perceptionRange) )
+				{
+					add self to: myself.interaction;
+				}
+		}
 	}
 
 	//Force functions
@@ -38,22 +69,24 @@ species interactionPeople parent:panicPeople
 		
 		people_forces <- {0.0, 0.0};
 		
-		ask interactionPeople parallel:true 
+		ask interactionPeople parallel:true
 		{
 			if self != myself
 			{
-				float distanceCenter <- norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+				
+				float distanceCenter <- matDistances[int(myself),0];
+				if distanceCenter = 0 {
+					write "" + name + matDistances;
+					write myself.name;
+					write "";
+				}
+				
 				float distance <- distanceCenter -(self.size+myself.size);
 				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
 				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
 				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
 				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
 				float repulsion <- Ai * exp(-distance / Bi);
-				
-				if ((perceptionRange < 0.0 or distance < perceptionRange) and (is360 or vision > 0.90 ))
-				{
-					add self to: myself.interaction;
-				}
 				
 				//Social force
 				social_repulsion_force <- {
@@ -94,11 +127,13 @@ species interactionPeople parent:panicPeople
 	
 	action colorChoice
 	{
-		if( !empty(interaction) and ( 
-			(stateChangingType = "Random based on nervousness" and (rnd(1000) / 1000)< nervousness) or
-			(stateChangingType = "Pure random" and (rnd(1000) / 1000)> stateChangingThreshold) or
-			(stateChangingType = "Nervousness threshold" and nervousness > stateChangingThreshold)
-			)
+		neighbourNervoussness <- 0.0;
+		
+		if( !empty(interaction) //and ( 
+//			(stateChangingType = "Random based on nervousness" and (rnd(1000) / 1000)< nervousness) or
+//			(stateChangingType = "Pure random" and (rnd(1000) / 1000)> stateChangingThreshold) or
+//			(stateChangingType = "Nervousness threshold" and nervousness > stateChangingThreshold)
+			//)
 		)
 		{
 			if interactionType = "One neighbour"
@@ -117,6 +152,8 @@ species interactionPeople parent:panicPeople
 				if neighbour != nil
 				{
 					n_color <- neighbour.color;
+					neighbourNervoussness <- neighbour.nervousness;
+					nbNeighbour <- 1;
 				}
 			}
 			else if interactionType = "Majority"
@@ -173,13 +210,16 @@ species interactionPeople parent:panicPeople
 				loop p over:interaction {
 					if !dead(p)
 					{
-						r <- r+ p.color.red;
-						g <- g+ p.color.green;
-						b <- b+ p.color.blue;
+//						r <- r+ p.color.red;
+//						g <- g+ p.color.green;
+//						b <- b+ p.color.blue;
+						neighbourNervoussness <- neighbourNervoussness + p.nervousness;
 					}
 				}
 				
-				n_color <- rgb(r/le,g/le,b/le);
+//				n_color <- rgb(r/le,g/le,b/le);
+				neighbourNervoussness <- neighbourNervoussness/(le+epsilon);
+				nbNeighbour <- le;
 				
 			}		
 		}
@@ -187,19 +227,13 @@ species interactionPeople parent:panicPeople
 	
 	action colorPropagation
 	{
-		color <- n_color;
+//		color <- n_color;
+		color <- rgb(255*nervousness,0.0,0.0);
 	}
-
-	aspect default
+	
+	action computeNervousnessEmpathy
 	{
-		
-
-		draw circle(size) color: color;
-		draw line([{location.x+ desired_direction.x,location.y + desired_direction.y},{location.x,location.y}]) color: #blue begin_arrow:0.1;
-		draw line([{location.x+ goal_attraction_force.x*deltaT,location.y + goal_attraction_force.y*deltaT},{location.x,location.y}]) color: #pink begin_arrow:0.1;
-		draw line([{location.x+ people_forces.x*deltaT/mass,location.y + people_forces.y*deltaT/mass},{location.x,location.y}]) color: #purple begin_arrow:0.1;
-		draw line([{location.x+ wall_forces.x*deltaT,location.y + wall_forces.y*deltaT},{location.x,location.y}]) color: #orange begin_arrow:0.1;
-		draw line([{location.x+ actual_velocity.x,location.y + actual_velocity.y},{location.x,location.y}]) color: #red begin_arrow:0.1;
+		nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
 	}
 
 }

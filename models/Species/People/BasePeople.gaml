@@ -39,6 +39,9 @@ species basePeople
 	//Compute forces
 	point people_forces <- {0.0,0.0};
 	point wall_forces <- {0.0,0.0};
+	
+	//Distance withall other agent
+	matrix matDistances <- nil as_matrix({number_of_people,1});
  	
 	init
 	{
@@ -121,6 +124,11 @@ species basePeople
 		
 		color <- d_color;
 	}
+	
+	action resetStepValue
+	{
+		matDistances <- nil as_matrix({number_of_people,1});
+	}
 
 	//Check if the agent is out. If it the case, dependant if respawn is actived or not, it delte the agent or replace it 
 	action sortie
@@ -179,6 +187,22 @@ species basePeople
 		aim <- {aimX,aimY};
 	}
 
+	action computeDistance
+	{	
+		ask basePeople parallel:true 
+		{
+			if self != myself
+			{
+				if(matDistances[int(myself),0] != nil)
+				{
+					myself.matDistances[int(self),0] <- matDistances[int(myself),0];
+				} else {
+					myself.matDistances[int(self),0] <-  norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+				}	
+			}
+		}
+	}
+
 	//Force functions
 	//Social repulsion force + physical interaction force
 	action people_repulsion_force_function
@@ -193,10 +217,9 @@ species basePeople
 		{
 			if self != myself
 			{
-				float distanceCenter <- norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+				float distanceCenter <- matDistances[int(myself),0];
 				float distance <- distanceCenter -(self.size+myself.size);
 				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
-				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
 				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
 				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
 				float repulsion <- Ai * exp(-distance / Bi);
