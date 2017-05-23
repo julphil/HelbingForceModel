@@ -9,10 +9,13 @@ model BaseParameter
 
 global
 {
+	string dataFileName;
+	
 	//Simulated time between two step (in second)
 	float deltaT min: 0.0001 max: 1.0 <- 0.1;
 	
 	//Number of agent
+	int nb_people;
 	int number_of_people min: 1 <- 20;
 	int number_of_walls min: 0 <- 4;
 	

@@ -13,51 +13,13 @@ species wall schedules: []
 {
 	float width;
 	float length;
+	float locationX;
+	float locationY;
+	
 	init
 	{
-		switch nbWalls
-		{
-			match 0
-			{
-				length <- spaceLength + 10.0;
-				width <- 100.0;
-				shape <- rectangle(length, width);
-				location <- { spaceLength / 2, -49.0 };
-				break;
-			}
-
-			match 1
-			{
-				length <- spaceLength + 10.0;
-				width <- 100.0;
-				shape <- rectangle(length, width);
-				location <- { spaceLength / 2, spaceWidth - (-49.0) };
-				break;
-			}
-
-			match 2
-			{
-				length <- 1.0;
-				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
-				shape <- rectangle(length, width);
-				//HERElocation <- { spaceLength / 2.0, width / 2 + 1 };
-				location <- { 2.0, width / 2 + 1 };
-				break;
-			}
-
-			match 3
-			{
-				length <- 1.0;
-				width <- spaceWidth / 2 - 1.0 - bottleneckSize / 2;
-				shape <- rectangle(length, width);
-				//HERElocation <- { spaceLength / 2.0, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
-				location <- { 2, spaceWidth / 2 - 1.0 - bottleneckSize / 2 + bottleneckSize + width / 2 + 1 };
-				break;
-			}
-
-		}
-
-		nbWalls <- nbWalls + 1;
+		location <- {locationX,locationY};
+		shape <- rectangle(length, width);
 	}
 	
 

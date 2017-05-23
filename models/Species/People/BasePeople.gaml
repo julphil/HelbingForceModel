@@ -11,15 +11,23 @@ import "../Wall/BaseWall.gaml"
 
 species basePeople
 {
-	rgb d_color;
+	string init_color;
 	rgb color;
 	
 	float size;
 	int group;
 	float mass min:1.0 max:120.0 <- 80.0;
 	
+	//Creation location
+	float pointAX;
+	float pointAY;
+	float pointBX;
+	float pointBY;
 
 	// Destination
+	list<pair<point>> lAim;
+	int indexAim <- 0;
+	geometry aimZone;
 	point aim;
 	point desired_direction;
 	float desired_speed;
@@ -50,79 +58,25 @@ species basePeople
 		max_velocity <- 1.3 * desired_speed;
 		
 		shape <- circle(size);
-		//In this version, you can have one group of black agent going left. Or two group with the same black group plus a yellow group going rigth
-		if nd mod 2 = 0 or !isDifferentGroup
-		{
-			if(isDifferentGroup)
-			{
-				d_color <- # black;	
-			}
-			else
-			{
-				d_color <- rnd_color(255);
-			}
-			if(type="random") {
-//				HERElocation <- { spaceLength - rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				location <- { spaceLength - rnd(spaceLength - 3), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				if (number_of_people > 1)
-				{
-					loop while:( agent_closest_to(self).location distance_to self.location < size*2){
-						location <- { spaceLength - rnd(spaceLength - 3), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-					}
-				}
-			} //random location in a halfspace
-				else if type = "lane" //lane configuration starting location
-				{
-					if(nd <20) {
-						location <- {nd+1,2.85};
-					} else {
-						location <- {nd-20,4.1};
-				}
-			}
 			
-			if (bottleneckSize < spaceWidth)
-			{
-				//HEREaim <- { spaceLength/2 -0.5, spaceWidth/2};
-				aim <- { 2 -0.5, spaceWidth/2};
-			} else {
-				aim <- {-size*2,location.y};
-			}
-			group <- 0;
-		} else
+		location <- { rnd(pointAX,pointBX), rnd(pointAY,pointBY) };
+		if (number_of_people > 1)
 		{
-			d_color <- # yellow;
-			if type = "random" {
-				location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-				if (number_of_people > 1)
-				{
-					loop while:(agent_closest_to(self).location distance_to self.location < size*2){
-						location <- { 0 + rnd(spaceLength / 2 - 1), rnd(spaceWidth - (1 + size)*2) + 1 + size };
-					}
-				}
-			} //random location in a halfspace
-			else if type = "lane" //lane configuration starting location
-			{
-				if(nd <20) {
-					location <- {nd,1.6};
-				} else {
-					location <- {nd-20,5.35};
-				}
+			loop while:( agent_closest_to(self).location distance_to self.location < size*2){
+				location <- { rnd(pointAX,pointBX), rnd(pointAY,pointBY) };
 			}
-			if (bottleneckSize < spaceWidth)
-			{
-				aim <- { spaceLength/2 + 0.5, spaceWidth/2 };
-			} else {
-				aim <- {spaceLength+size*2,location.y};
-			}
-			group <- 1;
 		}
-		 
-		nd <- nd + 1;
-		desired_direction <- {
-		(aim.x - location.x) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y)))), (aim.y - location.y) / (abs(sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y))))
-		};
 		
-		color <- d_color;
+		aimZone <- polygon([lAim[indexAim].key as point,{(lAim[indexAim].key as point).x,lAim[indexAim].value.y},lAim[indexAim].value,{lAim[indexAim].value.x,(lAim[indexAim].key as point).y}]);
+		
+		if init_color = "rnd"
+		{	
+			color <- rnd_color(255);
+		}
+		else
+		{
+			color <-init_color as rgb;
+		}
 	}
 	
 	action resetStepValue
@@ -137,10 +91,10 @@ species basePeople
 		{
 			if location.x >= spaceLength and group = 1
 			{
-				location <- { 0, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				location <- { 0, location.y};
 			} else if location.x <= 0 and group = 0
 			{
-				location <- { spaceLength, location.y};//rnd(spaceWidth - (1 + size)*2) + 1 + size };
+				location <- { spaceLength, location.y};
 			}
 		}
 		else if (location.x >= spaceLength and group = 1) or (location.x <= 0 and group = 0)
@@ -165,26 +119,18 @@ species basePeople
 	//Choose the destination point
 	action aim
 	{
-		float aimX; 
-		float aimY;
-		//HEREif((bottleneckSize >= spaceWidth) or (group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
-		if((bottleneckSize >= spaceWidth) or (group = 0 and location.x < 2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
-			aimX <- spaceLength*group+size*2*group;
-			aimY <- location.y;
-		} else  { 
-			if location.x > 4.0 or location.y < spaceWidth/2 - bottleneckSize/2 or location.y > spaceWidth/2 + bottleneckSize/2
-			{
-				aimX <- 3.0;
-				aimY <- spaceWidth/2;
-			}
-			else
-			{
-				aimX <- 1.5;
-				aimY <-  spaceWidth/2;
-			}
+		if location.x>(lAim[indexAim].key as point).x and location.x<lAim[indexAim].value.x and location.y>(lAim[indexAim].key as point).y and location.y<lAim[indexAim].value.y
+		{
+			indexAim <- indexAim+1;
+			aimZone <- polygon([lAim[indexAim].key as point,{(lAim[indexAim].key as point).x,lAim[indexAim].value.y},lAim[indexAim].value,{lAim[indexAim].value.x,(lAim[indexAim].key as point).y}]);
 		}
 		
-		aim <- {aimX,aimY};
+		aim <-  closest_points_with(location,aimZone)[1];
+		
+		//update the goal direction
+		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
+		desired_direction <- { (aim.x - location.x) / (norme + epsilon), (aim.y - location.y) / (norme + epsilon) };
+		
 	}
 
 	action computeDistance
@@ -217,7 +163,7 @@ species basePeople
 		{
 			if self != myself
 			{
-				float distanceCenter <- matDistances[int(myself),0];
+				float distanceCenter <- matDistances[int(myself),0] as float;
 				float distance <- distanceCenter -(self.size+myself.size);
 				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
 				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
@@ -318,10 +264,6 @@ species basePeople
 	{	
 		//Save the current distance to the aim before any move
 		lastDistanceToAim <- self.location distance_to aim;
-
-		//update the goal direction
-		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
-		desired_direction <- { (aim.x - location.x) / (norme + 0.000000001), (aim.y - location.y) / (norme + 0.000000001) };
 
 		//Goal attraction force
 		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };

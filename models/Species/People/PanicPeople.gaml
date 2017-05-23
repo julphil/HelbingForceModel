@@ -65,7 +65,7 @@ species panicPeople parent:basePeople
 		{
 			if self != myself
 			{
-				float distanceCenter <- matDistances[int(myself),0];
+				float distanceCenter <- matDistances[int(myself),0] as float;
 				float distance <- distanceCenter -(self.size+myself.size);
 				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
 				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
@@ -113,12 +113,17 @@ species panicPeople parent:basePeople
 	//Choose the destination point
 	action aim
 	{
-		//HEREif((bottleneckSize >= spaceWidth) or (group = 0 and location.x < spaceLength/2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
-		if((bottleneckSize >= spaceWidth) or (group = 0 and location.x < 2) or (group = 1 and location.x > spaceLength/2)) { //Already pass the bottleneck
-			aim <- {spaceLength*group+size*2*group,location.y};
-		} else  { //Don't pass it
-			aim <- {aim.x,spaceWidth/2};
+		if location.x>(lAim[indexAim].key as point).x and location.x<lAim[indexAim].value.x and location.y>(lAim[indexAim].key as point).y and location.y<lAim[indexAim].value.y
+		{
+			indexAim <- indexAim+1;
+			aimZone <- polygon([lAim[indexAim].key as point,{(lAim[indexAim].key as point).x,lAim[indexAim].value.y},lAim[indexAim].value,{lAim[indexAim].value.x,(lAim[indexAim].key as point).y}]);
 		}
+		
+		aim <-  closest_points_with(location,aimZone)[1];
+		
+		//update the goal direction
+		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
+		desired_direction <- { (aim.x - location.x) / (norme + epsilon), (aim.y - location.y) / (norme + epsilon) };
 	}
 	
 	//Noise in the movement of the pedestrian, rely on nervousness level
@@ -163,10 +168,6 @@ species panicPeople parent:basePeople
 	{	
 		//Save the current distance to the aim before any move
 		lastDistanceToAim <- self.location distance_to aim;
-
-		//update the goal direction
-		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
-		desired_direction <- { (aim.x - location.x) / (norme + 0.000000001), (aim.y - location.y) / (norme + 0.000000001) };
 		
 
 		//Goal attraction force

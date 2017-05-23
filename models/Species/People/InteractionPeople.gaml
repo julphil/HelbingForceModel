@@ -12,7 +12,7 @@ import "../../Parameter/InteractionParameter.gaml"
 
 species interactionPeople parent:panicPeople
 {
-
+	rgb d_color;
 	rgb n_color;
 	float neighbourNervoussness;
 	int nbNeighbour;
