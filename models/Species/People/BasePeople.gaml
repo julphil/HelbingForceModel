@@ -49,7 +49,7 @@ species basePeople
 	point wall_forces <- {0.0,0.0};
 	
 	//Distance withall other agent
-	matrix matDistances <- nil as_matrix({number_of_people,1});
+	matrix matDistances;
  	
 	init
 	{
@@ -97,7 +97,7 @@ species basePeople
 				location <- { spaceLength, location.y};
 			}
 		}
-		else if (location.x >= spaceLength and group = 1) or (location.x <= 0 and group = 0)
+		else if (location.x >= spaceLength) or (location.x <= 0)
 		{
 			do die;
 		}
@@ -130,7 +130,7 @@ species basePeople
 		//update the goal direction
 		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
 		desired_direction <- { (aim.x - location.x) / (norme + epsilon), (aim.y - location.y) / (norme + epsilon) };
-		
+				
 	}
 
 	action computeDistance
@@ -219,7 +219,7 @@ species basePeople
 				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
 				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y })-myself.size;
 				
-				point nij <- { (myself.location.x - wallClosestPoint.x) / (distance+myself.size), (myself.location.y - wallClosestPoint.y) / (distance+myself.size)};
+				point nij <- { (myself.location.x - wallClosestPoint.x) / (distance+myself.size+epsilon), (myself.location.y - wallClosestPoint.y) / (distance+myself.size+epsilon)};
 				
 				
 				float theta;

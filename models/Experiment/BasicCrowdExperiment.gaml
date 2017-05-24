@@ -14,18 +14,16 @@ import "../Scheduler/BaseScheduler.gaml"
 experiment helbingPanicSimulation type: gui
 {
 	parameter 'Data file' var:dataFileName category:"Simulation parameter" init:"null";
-	parameter 'Headless mode' var:headless category:"Simulation parameter";
-	parameter 'Generation type' var: type among:["random","lane"] init:"random" category:"Simulation parameter" ;
 	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second";
 	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second" slider:false;
-	parameter 'Is Different group ?' var: isDifferentGroup category:"Simulation parameter";
-	parameter 'Respawn' var: isRespawn category:"Simulation parameter";
-	parameter 'Pedestrian number' var: number_of_people category:"Simulation parameter";
+	parameter 'Respawn' var: isRespawn category:"Simulation parameter" init:false;
 	parameter 'Pedestrian speed' var: pedDesiredSpeed category:"Simulation parameter" unit:"m.s-1" slider:false;
+	parameter 'Pedestrian minimun size' var:pedSizeMin category:"Simulation parameter" unit:"m" slider:false;
+	parameter 'Pedestrian maximum size' var:pedSizeMax category:"Simulation parameter" unit:"m" slider:false;
+	parameter "Display force" var:arrow category:"Simulation parameter" init:false;
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
-	parameter 'Bottleneck size' var: bottleneckSize category:"Space parameter" unit:"Meter";
 	
 	parameter 'Interaction strength' var: Ai category:"Forces parameter" unit:"Newton";
 	parameter 'Range of the repulsive interactions' var: Bi category:"Forces parameter" unit:"Meter";
@@ -77,7 +75,6 @@ experiment helbingPanicSimulation_uniqueAgent type: gui parent:helbingPanicSimul
 	parameter 'Pedestrian number' var: number_of_people init:1;
 	parameter 'Space length' var: spaceLength init:20;
 	parameter 'Space width' var: spaceWidth init:15;
-	parameter 'Bottleneck size' var: bottleneckSize init:10.0;
 }
 
 //On group trying to pass a bottle neck
@@ -85,18 +82,22 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 {
 	parameter 'Data file' init:"../Experiment/DataFiles/oneRoomOneExit.csv";
 	
-	parameter 'Is Different group ?' var: isDifferentGroup init:false;
 	parameter 'Respawn' var: isRespawn init:false;
 	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Space width' var: spaceWidth init:15;
-	parameter 'Bottleneck size' var: bottleneckSize init:1.0;
 }
 
 //Two group trying to pass a bottleneck in diffrent direction
 experiment helbingPanicSImulation_bottleneck_2group parent: helbingPanicSimulation_bottleneck_1group
 {
-	parameter 'Is Different group ?' var: isDifferentGroup init:true;
 	parameter 'Data file' init:"../Experiment/DataFiles/twoGroupBottleNeck.csv";
+}
+
+experiment helbingRoom parent:helbingPanicSimulation
+{
+	parameter 'Data file' init:"../Experiment/DataFiles/roomsAndCorridor.csv";
+	parameter 'Space length' var: spaceLength init:35;
+	parameter 'Space width' var: spaceWidth init:19;
 }
 
 

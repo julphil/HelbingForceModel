@@ -16,23 +16,14 @@ global
 	
 	//Number of agent
 	int nb_people;
-	int number_of_people min: 1 <- 20;
-	int number_of_walls min: 0 <- 4;
+	int number_of_people;
 	
 	//Use to choose the kind of simulation you want
-	bool isDifferentGroup <- true; 
 	bool isRespawn <- true;
-	bool headless <- false;
-	string type;
 
 	//space dimension
 	int spaceWidth min: 2 <- 7;
 	int spaceLength min: 5 <-20;
-	float bottleneckSize min: 0.0 <- 10.0;
-
-	//incremental var use in species initialisation
-	int nd <- 0;
-	int nbWalls <- 0;
 
 	//Acceleration  time
 	float relaxation min: 0.01 max: 5.0 <- 0.2;
