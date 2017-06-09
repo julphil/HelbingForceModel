@@ -17,6 +17,7 @@ global
 	//Number of agent
 	int nb_people;
 	int number_of_people;
+	int max_people;
 	
 	//Use to choose the kind of simulation you want
 	bool isRespawn <- true;
@@ -56,6 +57,8 @@ global
 	
 	bool arrow;
 	
-	float epsilon <- 0.0000000001;
+	float epsilon <- 0.0000001;
+	
+	float spawFrequency <- -1.0;
 }
 

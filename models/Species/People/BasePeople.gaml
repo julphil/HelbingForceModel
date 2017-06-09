@@ -40,6 +40,7 @@ species basePeople
     float cumuledOrientedSpeed;
     list<float> lOrientedSpeed;
     int presenceTime <- 0;
+    int spawnTime;
     
     //Goal attraction force
 	point goal_attraction_force <- {0.0,0.0};
@@ -77,6 +78,12 @@ species basePeople
 		{
 			color <-init_color as rgb;
 		}
+		
+		spawnTime <-cycle;
+		do aim;
+		
+		actual_velocity <- {desired_speed * desired_direction.x,desired_speed * desired_direction.y};
+		
 	}
 	
 	action resetStepValue
@@ -97,7 +104,7 @@ species basePeople
 				location <- { spaceLength, location.y};
 			}
 		}
-		else if (location.x >= spaceLength) or (location.x <= 0)
+		else if ((location.x >= spaceLength) or (location.x <= 0)) and indexAim = length(lAim)-1
 		{
 			do die;
 		}

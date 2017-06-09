@@ -194,11 +194,11 @@ species panicPeople parent:basePeople
 		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
 		
 		
-		if cycle > round(relaxation/deltaT)
+		if cycle-spawnTime > round(relaxation/deltaT)
 		{
-			if cycle < 10+relaxation/deltaT
+			if cycle-spawnTime < 10+relaxation/deltaT
 			{
-				presenceTime <- cycle -relaxation/deltaT as int;
+				presenceTime <- cycle-spawnTime -relaxation/deltaT as int;
 			}
 			else
 			{
@@ -212,7 +212,7 @@ species panicPeople parent:basePeople
 				sum <- sum + i;
 			}
 			//Calculate the current nervousness
-			nervousness <- 1-((sum/(presenceTime))/(pedDesiredSpeed/*desired_speed*/*deltaT));
+			nervousness <- 1-((sum/(presenceTime+epsilon))/(pedDesiredSpeed/*desired_speed*/*deltaT));
 		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
 		}
 	}

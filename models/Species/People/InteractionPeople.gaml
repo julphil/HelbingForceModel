@@ -129,11 +129,12 @@ species interactionPeople parent:panicPeople
 	{
 		neighbourNervoussness <- 0.0;
 		
-		if( !empty(interaction) //and ( 
-//			(stateChangingType = "Random based on nervousness" and (rnd(1000) / 1000)< nervousness) or
-//			(stateChangingType = "Pure random" and (rnd(1000) / 1000)> stateChangingThreshold) or
-//			(stateChangingType = "Nervousness threshold" and nervousness > stateChangingThreshold)
-			//)
+		if( !empty(interaction) and ( 
+			(stateChangingType = "Always") or
+			(stateChangingType = "Random based on nervousness" and (rnd(1000) / 1000)< nervousness) or
+			(stateChangingType = "Pure random" and (rnd(1000) / 1000)> stateChangingThreshold) or
+			(stateChangingType = "Nervousness threshold" and nervousness > stateChangingThreshold)
+			)
 		)
 		{
 			if interactionType = "One neighbour"
@@ -228,12 +229,32 @@ species interactionPeople parent:panicPeople
 	action colorPropagation
 	{
 //		color <- n_color;
-		color <- rgb(255*nervousness,0.0,0.0);
+		color <- rgb(255*nervousness,255-255*nervousness,0.0);
 	}
 	
 	action computeNervousnessEmpathy
 	{
 		nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
+	}
+	
+	aspect graph
+	{
+		float rayon <- number_of_people/(2*#pi);
+		
+		draw circle(size) color: color at:{spaceLength/2+rayon*cos(((360)/number_of_people)*int(self)),spaceWidth/2+rayon*sin(((360)/number_of_people)*int(self))};
+	
+		if interaction contains nil
+		{
+			remove nil all:true  from: interaction; 	
+		}
+				
+		loop p over:interaction {
+			if !dead(p)
+			{
+				write "h";
+				draw line([{spaceLength/2+rayon*cos(((360)/number_of_people)*int(self)),spaceWidth/2+rayon*sin(((360)/number_of_people)*int(self))},{spaceLength/2+rayon*cos(((360)/number_of_people)*int(p)),spaceWidth/2+rayon*sin(((360)/number_of_people)*int(p))}]) color:#red;	
+			}
+		}
 	}
 
 }

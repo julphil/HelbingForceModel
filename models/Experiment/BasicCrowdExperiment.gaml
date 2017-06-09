@@ -83,7 +83,6 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 	parameter 'Data file' init:"../Experiment/DataFiles/oneRoomOneExit.csv";
 	
 	parameter 'Respawn' var: isRespawn init:false;
-	parameter 'Pedestrian number' var: number_of_people init:40;
 	parameter 'Space width' var: spaceWidth init:15;
 }
 
