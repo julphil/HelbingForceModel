@@ -157,6 +157,28 @@ experiment corridorExit parent:helbingPanicSimulation
 	parameter 'Space width' var: spaceWidth init:17;
 
 	parameter 'Spawn Frequency' var:spawFrequency category:"Simulation parameter" init:15.0;
+	
+	output
+	{
+		display SocialForce_ModelNervousnnessDistribution 
+		{
+			chart "Nervoussness Distribution" type:histogram
+			{
+				data "[0,[" value: nervousityDistribution[0];
+				data "[5,[" value: nervousityDistribution[1];
+				data "[10,[" value: nervousityDistribution[2];
+				data "[15,[" value: nervousityDistribution[3];
+				data "[20,[" value: nervousityDistribution[4];
+				data "[25,[" value: nervousityDistribution[5];
+				data "[30,[" value: nervousityDistribution[6];
+				data "[35,[" value: nervousityDistribution[7];
+				data "[40,[" value: nervousityDistribution[8];
+				data "[45,[" value: nervousityDistribution[9];
+				data "[50,[" value: nervousityDistribution[10];
+				data "[55,[" value: nervousityDistribution[11];
+			}
+		}
+		}
 }
 
 

@@ -16,6 +16,8 @@ species interactionPeople parent:panicPeople
 	rgb n_color;
 	float neighbourNervoussness;
 	int nbNeighbour;
+	
+	list<int> nervousityDistributionMark;
  
  	//Interaction agent
  	list<interactionPeople> interaction;
@@ -23,6 +25,8 @@ species interactionPeople parent:panicPeople
 	init
 	{
 		n_color <- d_color;
+		
+		nervousityDistributionMark <- list_with(12,0);
 	}
 
 	action resetStepValue
@@ -235,6 +239,28 @@ species interactionPeople parent:panicPeople
 	action computeNervousnessEmpathy
 	{
 		nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
+	}
+	
+	action nervousnessMark
+	{
+		if nervousness > 0.5 and location.x>=0
+		{
+			int index <- int(location.x/5);
+			
+			if nervousityDistributionMark[index] = 0
+			{
+				nervousityDistributionMark[index] <- 1;
+			}
+		}
+	}
+	
+	action validMark
+	{
+		loop i from: 0 to: length(nervousityDistributionMark)-1{
+			if nervousityDistributionMark[i] = 1 {
+				nervousityDistributionMark[i] <- 2;
+			}
+		}
 	}
 	
 	aspect graph
