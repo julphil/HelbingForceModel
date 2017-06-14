@@ -75,15 +75,15 @@ experiment helbingPanicSimulation type: gui
 		display SocialForceModel_averageSpeed
 		{
 			chart "Average speed" {
-				data "Average speed" value: mean(interactionPeople collect norm(each.actual_velocity));
-				data "Average directed speed" value: mean(interactionPeople collect each.orientedSpeed)/deltaT;
+				data "Average speed" value: averageSpeed;
+				data "Average directed speed" value: meanOrientedSpeed/deltaT;
 			}
 		}
 		
 		display SocialForceModel_nervousPeople
 		{
 			chart "Number of nervous people" {
-				data "Number of nervous people" value: interactionPeople count (each.nervousness >0.5);
+				data "Number of nervous people" value: nbNervoussPeople;
 			}
 		}
 		

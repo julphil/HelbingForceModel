@@ -129,6 +129,11 @@ species basePeople
 		if location.x>(lAim[indexAim].key as point).x and location.x<lAim[indexAim].value.x and location.y>(lAim[indexAim].key as point).y and location.y<lAim[indexAim].value.y
 		{
 			indexAim <- indexAim+1;
+			if indexAim >= length(lAim)
+			{
+				do die;
+			}
+			
 			aimZone <- polygon([lAim[indexAim].key as point,{(lAim[indexAim].key as point).x,lAim[indexAim].value.y},lAim[indexAim].value,{lAim[indexAim].value.x,(lAim[indexAim].key as point).y}]);
 		}
 		
