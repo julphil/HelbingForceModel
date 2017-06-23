@@ -39,14 +39,18 @@ species interactionPeople parent:panicPeople
 	{	
 		ask interactionPeople parallel:true 
 		{
-			if self != myself
+			if self != myself and int(self) < length(myself.matDistances)
 			{
+				//if int(self) > length(myself.matDistances) {write "" + cycle + " " + name + " " + length(matDistances) + " " + length(myself.matDistances);}
 				if(matDistances[int(myself),0] != nil)
 				{
 					myself.matDistances[int(self),0] <- matDistances[int(myself),0];
 				} else {
 					myself.matDistances[int(self),0] <-  norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
 				}
+			} else if int(self) > length(myself.matDistances)
+			{
+				write location;
 			}
 		}
 		
@@ -79,11 +83,11 @@ species interactionPeople parent:panicPeople
 			{
 				
 				float distanceCenter <- matDistances[int(myself),0];
-				if distanceCenter = 0 {
-					write "" + name + matDistances;
-					write myself.name;
-					write "";
-				}
+				//if distanceCenter = 0 {
+				//	write "" + name + matDistances;
+				//	write myself.name;
+				//	write "";
+				//}
 				
 				float distance <- distanceCenter -(self.size+myself.size);
 				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
@@ -247,7 +251,7 @@ species interactionPeople parent:panicPeople
 		{
 			int index <- int(location.x/5);
 			
-			if nervousityDistributionMark[index] = 0
+			if index < length(nervousityDistributionMark) and nervousityDistributionMark[index] = 0
 			{
 				nervousityDistributionMark[index] <- 1;
 			}

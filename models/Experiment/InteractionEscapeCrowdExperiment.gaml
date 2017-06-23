@@ -25,7 +25,7 @@ experiment helbingPanicSimulation type: gui
 	parameter 'Pedestrian minimun size (radius)' var:pedSizeMin category:"Simulation parameter" unit:"m" slider:false;
 	parameter 'Pedestrian maximum size (radius)' var:pedSizeMax category:"Simulation parameter" unit:"m" slider:false;
 	parameter "Display force" var:arrow category:"Simulation parameter" init:false;
-	parameter "Maximum people" var:max_people category:"Simulation parameter" init:2000;
+	parameter "Maximum people" var:max_people category:"Simulation parameter" init:500;
 	
 	parameter 'State changing type' var: stateChangingType among:["Always","Pure random","Random based on nervousness","Nervousness threshold"] init:"Always" category:"Interaction parameter" ;
 	parameter 'State changing threshold' var: stateChangingThreshold category:"Interaction parameter" slider:false init:0.5;
@@ -58,7 +58,7 @@ experiment helbingPanicSimulation type: gui
 		display SocialForceModel_NBinteractionPeople
 		{
 			chart "Number of interactionPeoples still inside " {
-				data "nb_interactionPeople" value: nb_interactionPeople;
+				data "nb_interactionPeople" value: max_people-(number_of_people-nb_interactionPeople);
 				
 			}
 			
@@ -152,11 +152,11 @@ experiment helbingRoom parent:helbingPanicSimulation
 
 experiment corridorExit parent:helbingPanicSimulation
 {
-	parameter 'Data file' init:"../Experiment/DataFiles/corridorExit/corridorExit_12m.csv";
+	parameter 'Data file' init:"../Experiment/DataFiles/corridorExit5/corridorExit_1m.csv";
 	parameter 'Space length' var: spaceLength init:60;
-	parameter 'Space width' var: spaceWidth init:17;
+	parameter 'Space width' var: spaceWidth init:7;
 
-	parameter 'Spawn Frequency' var:spawFrequency category:"Simulation parameter" init:15.0;
+	parameter 'Spawn Frequency' var:spawFrequency category:"Simulation parameter" init:14.0;
 	
 	output
 	{

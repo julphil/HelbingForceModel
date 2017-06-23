@@ -96,6 +96,7 @@ species basePeople
 	{
 		if isRespawn 
 		{
+			
 			if location.x >= spaceLength and group = 1
 			{
 				location <- { 0, location.y};
