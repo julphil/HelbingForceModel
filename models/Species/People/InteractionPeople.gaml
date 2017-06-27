@@ -83,11 +83,6 @@ species interactionPeople parent:panicPeople
 			{
 				
 				float distanceCenter <- matDistances[int(myself),0];
-				//if distanceCenter = 0 {
-				//	write "" + name + matDistances;
-				//	write myself.name;
-				//	write "";
-				//}
 				
 				float distance <- distanceCenter -(self.size+myself.size);
 				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
@@ -126,6 +121,7 @@ species interactionPeople parent:panicPeople
 						physical_tangencial_force.x + friction * theta * deltaVitesseTangencielle * tij.x,
 						physical_tangencial_force.y + friction * theta * deltaVitesseTangencielle * tij.y
 					};
+					
 				}
 			}
 		}
@@ -281,7 +277,6 @@ species interactionPeople parent:panicPeople
 		loop p over:interaction {
 			if !dead(p)
 			{
-				write "h";
 				draw line([{spaceLength/2+rayon*cos(((360)/number_of_people)*int(self)),spaceWidth/2+rayon*sin(((360)/number_of_people)*int(self))},{spaceLength/2+rayon*cos(((360)/number_of_people)*int(p)),spaceWidth/2+rayon*sin(((360)/number_of_people)*int(p))}]) color:#red;	
 			}
 		}

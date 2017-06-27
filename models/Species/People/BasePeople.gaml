@@ -132,6 +132,7 @@ species basePeople
 			indexAim <- indexAim+1;
 			if indexAim >= length(lAim)
 			{
+				nbPeopleOut <- nbPeopleOut +1;
 				do die;
 			}
 			

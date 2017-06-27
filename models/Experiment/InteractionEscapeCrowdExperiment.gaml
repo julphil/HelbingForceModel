@@ -14,11 +14,12 @@ import "../Scheduler/InteractionScheduler.gaml"
 experiment helbingPanicSimulation type: gui
 {
 	parameter 'Data file' var:dataFileName category:"Simulation parameter" init:"null";
+	parameter 'Output file' var:outputFileName category:"Simulation parameter" init:"null";
+	parameter 'Output file max' var:outputMaxFileName category:"Simulation parameter" init:"null";
 	parameter 'Fluctuation type' var: fluctuationType among:["Speed","Vector"] init:"Speed" category:"Simulation parameter" ;
 	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second" init: 0.01;
 	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second" slider:false;
 	parameter 'Respawn' var: isRespawn category:"Simulation parameter" init:false slider:false;
-	parameter 'Spawn Frequency' var:spawFrequency category:"Simulation parameter" init:-1.0;
 	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter" init:true;
 	parameter 'Pedestrian speed' var: pedDesiredSpeed category:"Simulation parameter" unit:"m.s-1" slider:false;
 	parameter 'Pedestrian maximum speed' var: pedMaxSpeed category:"Simulation parameter" unit:"m.s-1" slider:false init:6.0;
@@ -26,6 +27,7 @@ experiment helbingPanicSimulation type: gui
 	parameter 'Pedestrian maximum size (radius)' var:pedSizeMax category:"Simulation parameter" unit:"m" slider:false;
 	parameter "Display force" var:arrow category:"Simulation parameter" init:false;
 	parameter "Maximum people" var:max_people category:"Simulation parameter" init:500;
+	parameter "Simulation duration" var:simulationDuration category:"Simulation parameter" init: 30000 unit:"cycle";
 	
 	parameter 'State changing type' var: stateChangingType among:["Always","Pure random","Random based on nervousness","Nervousness threshold"] init:"Always" category:"Interaction parameter" ;
 	parameter 'State changing threshold' var: stateChangingThreshold category:"Interaction parameter" slider:false init:0.5;
@@ -58,7 +60,7 @@ experiment helbingPanicSimulation type: gui
 		display SocialForceModel_NBinteractionPeople
 		{
 			chart "Number of interactionPeoples still inside " {
-				data "nb_interactionPeople" value: max_people-(number_of_people-nb_interactionPeople);
+				data "nb_interactionPeople" value: nb_interactionPeople;
 				
 			}
 			
@@ -152,11 +154,10 @@ experiment helbingRoom parent:helbingPanicSimulation
 
 experiment corridorExit parent:helbingPanicSimulation
 {
-	parameter 'Data file' init:"../Experiment/DataFiles/corridorExit5/corridorExit_1m.csv";
+	parameter 'Data file' init:"../Experiment/DataFiles/corridorExit5/lambda3/corridorExit_1m.csv";
 	parameter 'Space length' var: spaceLength init:60;
 	parameter 'Space width' var: spaceWidth init:7;
 
-	parameter 'Spawn Frequency' var:spawFrequency category:"Simulation parameter" init:14.0;
 	
 	output
 	{
@@ -178,7 +179,10 @@ experiment corridorExit parent:helbingPanicSimulation
 				data "[55,[" value: nervousityDistribution[11];
 			}
 		}
+		
 		}
+		
+		
 }
 
 

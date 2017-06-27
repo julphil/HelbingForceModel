@@ -14,6 +14,8 @@ global
 	//Simulated time between two step (in second)
 	float deltaT min: 0.0001 max: 1.0 <- 0.1;
 	
+	int simulationDuration;
+	
 	//Number of agent
 	int nb_people;
 	int number_of_people;
@@ -59,6 +61,16 @@ global
 	
 	float epsilon <- 0.0000001;
 	
-	float spawFrequency <- -1.0;
+	
+	//FILE
+	string outputFileName;
+	string outFileData;
+	string outputMaxFileName;
+	
+	
+	
+	int nbPeopleOut <- 0;
+	
+	
 }
 
