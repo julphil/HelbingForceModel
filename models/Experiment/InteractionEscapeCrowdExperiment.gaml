@@ -57,6 +57,10 @@ experiment helbingPanicSimulation type: gui
 			
 		}
 		
+		display SocialForceModel_Field type: opengl {
+            species field aspect:aspectNervousness;
+        }
+		
 		display SocialForceModel_NBinteractionPeople
 		{
 			chart "Number of interactionPeoples still inside " {

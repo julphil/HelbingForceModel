@@ -263,6 +263,13 @@ species interactionPeople parent:panicPeople
 		}
 	}
 	
+	action cellMark {
+		ask field[(self.location.x) as int,(self.location.y) as int]
+		{
+			do addAgent(myself);
+		}
+	}
+	
 	aspect graph
 	{
 		float rayon <- number_of_people/(2*#pi);
@@ -282,4 +289,56 @@ species interactionPeople parent:panicPeople
 		}
 	}
 
+}
+
+grid field width:spaceLength height:spaceWidth {
+	list<interactionPeople> insider;
+	bool isWall;
+	rgb cellColor;
+	float nerv;
+	
+	init {
+		insider <- [];
+		do setColor;
+		nerv <- 0.0;
+	}
+	
+	action reset 
+	{
+		insider <- [];
+		nerv <- 0.0;
+	}
+	
+	action addAgent(agent a) {
+		add a as interactionPeople to:insider;
+	}
+	
+	action setColor
+	{
+		if isWall
+		{
+			cellColor <- #black;
+		}
+		else {
+			if length(insider) = 0 {
+	       		cellColor <- #white;
+	       	}
+	        else {
+	    		loop a over:insider
+	    		{
+	    			nerv <- nerv + a.nervousness;
+	    		}
+	    		
+	    		nerv <- nerv/length(insider);
+	    		
+	    		cellColor <- rgb(255*nerv,0.0,255-255*nerv);
+	        }
+	       }
+	}
+	
+	aspect aspectNervousness 
+	{
+	        	draw square(1) color:cellColor;
+	}
+	        	
 }
