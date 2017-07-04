@@ -61,17 +61,19 @@ species interactionPeople parent:panicPeople
 	{
 		ask interactionPeople 
 		{
-			float distanceCenter <- matDistances[int(myself),0];
-				
-				float distance <- distanceCenter -(self.size+myself.size);
-				point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
-				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
-			
-			if ((perceptionRange < 0.0 or float(matDistances[int(myself),0]) < perceptionRange) and (is360 or (acos(phiij) < angleInteraction and acos(phiij) > -angleInteraction) or acos(phiij) > 360-angleInteraction) )
-				{
+			if self != myself
+			{
+				float distanceCenter <- matDistances[int(myself),0];
 					
-					add self to: myself.interaction;
-				}
+					float distance <- distanceCenter -(self.size+myself.size);
+					point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
+					float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
+				
+				if ((perceptionRange < 0.0 or float(matDistances[int(myself),0]) < perceptionRange) and (is360 or (acos(phiij) < angleInteraction and acos(phiij) > -angleInteraction) or acos(phiij) > 360-angleInteraction) )
+					{
+						add self to: myself.interaction;
+					}
+			}
 		}
 	}
 
@@ -172,45 +174,6 @@ species interactionPeople parent:panicPeople
 					nbNeighbour <- 1;
 				}
 			}
-			else if interactionType = "Majority"
-			{
-				map<rgb,int> colors;
-				
-				if interaction contains nil
-				{
-					remove nil all:true  from: interaction; 	
-				}
-				
-				//Majority
-				loop p over:interaction {
-					if !dead(p)
-					{
-						rgb c <- p.color;
-						if(colors contains c){
-							put colors[c]+1 at:c in:colors;
-						}
-						else
-						{
-							add c::1 to:colors;
-						}
-					}
-				}
-				
-				pair<rgb,int> max <- nil;
-				
-				loop c over:colors.keys{
-					int value <- colors[c];
-					if max = nil or value > max.value
-					{
-						max <- c::value;
-					}
-				}
-				
-				if max.key != nil
-				{
-					n_color <- max.key;
-				}
-			}
 			else if 	interactionType = "Mean"
 			{
 				int le <- length(interaction);
@@ -248,6 +211,48 @@ species interactionPeople parent:panicPeople
 
 				neighbourNervoussness <- max;
 				nbNeighbour <- length(interaction);
+			}
+			else if interactionType = "BiasedFortuneWheel"
+			{
+				if interaction contains nil
+				{
+					remove nil all:true  from: interaction; 	
+				}
+				
+				float lastProb <- 0.0;
+				nbNeighbour <- length(interaction);
+				
+				list<pair<float,float>> wheel;
+				
+				loop p over:interaction {
+					if !dead(p)
+					{
+						lastProb <- lastProb + (abs(nervousness-p.lastNervousness))/nbNeighbour;
+						add lastProb::p.lastNervousness to:wheel;
+					}
+				}
+				
+				bool continue <- nbNeighbour > 0;
+				float random <- rnd(1.0);
+				int index <- 0;
+				
+				loop while:continue
+				{
+					if (wheel[index].key > random)
+					{
+						continue <- false;
+						neighbourNervoussness <- wheel[index].value;
+					}
+					else {
+						index <- index + 1;
+						
+						if index >= nbNeighbour
+						{
+							continue <- false;
+							neighbourNervoussness <- nervousness;
+						}
+					}
+				}
 			}		
 		}
 }
@@ -263,14 +268,13 @@ species interactionPeople parent:panicPeople
 		{
 			nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
 		}
-		else if interactionType = "Maximum"
-			{
-				if nbNeighbour > 0 {
-					nervousness <- (1-empathy)*nervousness + empathy*neighbourNervoussness;
-				}
-				
+		else if interactionType = "Maximum" or interactionType = "BiasedFortuneWheel"
+		{
+			if nbNeighbour > 0 {
+				nervousness <- (1-empathy)*nervousness + empathy*neighbourNervoussness;
 			}
 			
+		}
 		lastNervousness <- nervousness;
 	}
 	
