@@ -65,7 +65,6 @@ global
 	//FILE
 	string outputFileName;
 	string outFileData;
-	string outputMaxFileName;
 	
 	
 	

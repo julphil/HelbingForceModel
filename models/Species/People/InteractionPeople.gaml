@@ -16,6 +16,7 @@ species interactionPeople parent:panicPeople
 	rgb n_color;
 	float neighbourNervoussness;
 	int nbNeighbour;
+	float lastNervousness;
 	
 	list<int> nervousityDistributionMark;
  
@@ -60,8 +61,15 @@ species interactionPeople parent:panicPeople
 	{
 		ask interactionPeople 
 		{
-			if ((perceptionRange < 0.0 or float(matDistances[int(myself),0]) < perceptionRange) )
+			float distanceCenter <- matDistances[int(myself),0];
+				
+				float distance <- distanceCenter -(self.size+myself.size);
+				point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
+				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
+			
+			if ((perceptionRange < 0.0 or float(matDistances[int(myself),0]) < perceptionRange) and (is360 or (acos(phiij) < angleInteraction and acos(phiij) > -angleInteraction) or acos(phiij) > 360-angleInteraction) )
 				{
+					
 					add self to: myself.interaction;
 				}
 		}
@@ -85,11 +93,13 @@ species interactionPeople parent:panicPeople
 				float distanceCenter <- matDistances[int(myself),0];
 				
 				float distance <- distanceCenter -(self.size+myself.size);
-				point nij <- { (myself.location.x - self.location.x) / distanceCenter, (myself.location.y - self.location.y) / distanceCenter };
+				point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
 				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
 				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
 				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
 				float repulsion <- Ai * exp(-distance / Bi);
+				
+				
 				
 				//Social force
 				social_repulsion_force <- {
@@ -132,6 +142,7 @@ species interactionPeople parent:panicPeople
 	action colorChoice
 	{
 		neighbourNervoussness <- 0.0;
+		nbNeighbour <- 0;
 		
 		if( !empty(interaction) and ( 
 			(stateChangingType = "Always") or
@@ -202,9 +213,6 @@ species interactionPeople parent:panicPeople
 			}
 			else if 	interactionType = "Mean"
 			{
-				int r <-0;
-				int g <-0;
-				int b <-0;
 				int le <- length(interaction);
 				
 				if interaction contains nil
@@ -215,36 +223,61 @@ species interactionPeople parent:panicPeople
 				loop p over:interaction {
 					if !dead(p)
 					{
-//						r <- r+ p.color.red;
-//						g <- g+ p.color.green;
-//						b <- b+ p.color.blue;
-						neighbourNervoussness <- neighbourNervoussness + p.nervousness;
+						neighbourNervoussness <- neighbourNervoussness + p.lastNervousness;
 					}
 				}
-				
-//				n_color <- rgb(r/le,g/le,b/le);
 				neighbourNervoussness <- neighbourNervoussness/(le+epsilon);
 				nbNeighbour <- le;
 				
+			}
+			else if interactionType = "Maximum"
+			{
+				float max <- 0.0;
+
+				if interaction contains nil
+				{
+					remove nil all:true  from: interaction; 	
+				}
+				
+				loop p over:interaction {
+					if !dead(p) and p.nervousness > max
+					{
+						max <- p.lastNervousness;
+					}
+				}
+
+				neighbourNervoussness <- max;
+				nbNeighbour <- length(interaction);
 			}		
 		}
 }
 	
 	action colorPropagation
 	{
-//		color <- n_color;
 		color <- rgb(255*nervousness,255-255*nervousness,0.0);
 	}
 	
 	action computeNervousnessEmpathy
 	{
-		nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
+		if 	interactionType = "Mean"
+		{
+			nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
+		}
+		else if interactionType = "Maximum"
+			{
+				if nbNeighbour > 0 {
+					nervousness <- (1-empathy)*nervousness + empathy*neighbourNervoussness;
+				}
+				
+			}
+			
+		lastNervousness <- nervousness;
 	}
 	
 	action nervousnessMark
 	{
 		if nervousness > 0.5 and location.x>=0
-		{
+		{	
 			int index <- int(location.x/5);
 			
 			if index < length(nervousityDistributionMark) and nervousityDistributionMark[index] = 0
@@ -295,18 +328,49 @@ grid field width:spaceLength height:spaceWidth {
 	list<interactionPeople> insider;
 	bool isWall;
 	rgb cellColor;
-	float nerv;
+	rgb cellColorTotal;
+	rgb cellColorTemporal;
+	
+	float instantAverageNerv;
+	float instantCumuledNerv;
+	float totalAverageNerv;
+	float totalCumuledNerv;
+	float totalCumuledAverageNerv;
+	float temporalNerv;
+	float chargeNerv;
+	
+	int cptCharge;
+	int cptActiv;
+	
+	int nbCycle;
 	
 	init {
 		insider <- [];
+		
+		instantAverageNerv <- 0.0;
+		instantCumuledNerv <- 0.0;
+		totalAverageNerv <- 0.0;
+		totalCumuledNerv <- 0.0;
+		totalCumuledAverageNerv <- 0.0;
+		
+		temporalNerv <- 0.0;
+		chargeNerv <- 0.0;
+	
+		cptCharge <- -2;
+		cptActiv <- 0;
+		
 		do setColor;
-		nerv <- 0.0;
+		
+		cellColor <- #white;
+		cellColorTotal <- #white;	
+		cellColorTemporal <- #white;
 	}
 	
 	action reset 
 	{
 		insider <- [];
-		nerv <- 0.0;
+		instantAverageNerv <- 0.0;
+		instantCumuledNerv <- 0.0;
 	}
 	
 	action addAgent(agent a) {
@@ -318,27 +382,78 @@ grid field width:spaceLength height:spaceWidth {
 		if isWall
 		{
 			cellColor <- #black;
+			cellColorTotal <- #black;
+			cellColorTemporal <- #black;
+			instantAverageNerv <- -1.0;
+			instantCumuledNerv <- -1.0;
+			totalAverageNerv <- -1.0;
+			totalCumuledNerv <- -1.0;
+			totalCumuledAverageNerv <- -1.00;
 		}
 		else {
+			if cptCharge >= intervalLength
+			{
+				cptCharge <- 0;
+				cptActiv <- 0;
+				chargeNerv <- 0.0;
+			}
+			
+			cptCharge <- cptCharge + 1;
+			
 			if length(insider) = 0 {
 	       		cellColor <- #white;
 	       	}
 	        else {
+	        	cptActiv <- cptActiv + 1;
+	        	
+	        	nbCycle <- nbCycle +1;
+	        	
 	    		loop a over:insider
 	    		{
-	    			nerv <- nerv + a.nervousness;
+	    			instantCumuledNerv <-instantCumuledNerv + a.nervousness;
 	    		}
 	    		
-	    		nerv <- nerv/length(insider);
+	    		instantAverageNerv <- instantCumuledNerv/length(insider);
+	    		totalCumuledNerv <- totalCumuledNerv + instantCumuledNerv;
 	    		
-	    		cellColor <- rgb(255*nerv,0.0,255-255*nerv);
+	    		totalCumuledAverageNerv <- totalCumuledAverageNerv + instantAverageNerv;
+	    		
+	    		totalAverageNerv <- totalCumuledAverageNerv/nbCycle;
+	    		
+	    		chargeNerv <- chargeNerv + instantAverageNerv;
+	    		
+	    		cellColor <- rgb(255*instantAverageNerv,0.0,255-255*instantAverageNerv);
+	    		cellColorTotal <- rgb(255*totalAverageNerv,0.0,255-255*totalAverageNerv);
 	        }
+	        if cptCharge >= intervalLength
+			{
+				if cptActiv > 0 
+				{
+					temporalNerv <- chargeNerv/cptActiv;
+					cellColorTemporal <- rgb(255*temporalNerv,0.0,255-255*temporalNerv);
+				}
+				else
+				{ 
+					cellColorTemporal <- #white;
+				}
+			}
+	        
 	       }
 	}
 	
 	aspect aspectNervousness 
 	{
 	        	draw square(1) color:cellColor;
+	}
+	
+	aspect aspectNervousnessTotal
+	{
+		draw square(1) color:cellColorTotal;
+	}
+	
+	aspect aspectNervousnessTemporal
+	{
+		draw square(1) color:cellColorTemporal;
 	}
 	        	
 }

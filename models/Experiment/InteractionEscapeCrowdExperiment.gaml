@@ -15,7 +15,6 @@ experiment helbingPanicSimulation type: gui
 {
 	parameter 'Data file' var:dataFileName category:"Simulation parameter" init:"null";
 	parameter 'Output file' var:outputFileName category:"Simulation parameter" init:"null";
-	parameter 'Output file max' var:outputMaxFileName category:"Simulation parameter" init:"null";
 	parameter 'Fluctuation type' var: fluctuationType among:["Speed","Vector"] init:"Speed" category:"Simulation parameter" ;
 	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second" init: 0.01;
 	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second" slider:false;
@@ -28,14 +27,20 @@ experiment helbingPanicSimulation type: gui
 	parameter "Display force" var:arrow category:"Simulation parameter" init:false;
 	parameter "Maximum people" var:max_people category:"Simulation parameter" init:500;
 	parameter "Simulation duration" var:simulationDuration category:"Simulation parameter" init: 30000 unit:"cycle";
+	parameter "Temporal Interval Lengrh" var:intervalLength category:"Simulation parameter" init:1000 unit:"cycle" min:1;
+	
 	
 	parameter 'State changing type' var: stateChangingType among:["Always","Pure random","Random based on nervousness","Nervousness threshold"] init:"Always" category:"Interaction parameter" ;
 	parameter 'State changing threshold' var: stateChangingThreshold category:"Interaction parameter" slider:false init:0.5;
-	parameter 'Interaction choice' var: interactionType among:["One neighbour","Majority","Mean"] init:"Mean" category:"Interaction parameter" ;
+	parameter 'Interaction choice' var: interactionType among:["One neighbour","Majority","Mean","Maximum"] init:"Mean" category:"Interaction parameter" ;
 	parameter 'Neighbour choice' var: neighbourType among:["Closest","Random"] init:"Random" category:"Interaction parameter" ;
 	parameter 'Has a 360° perception' var:is360 init:true category:"Interaction parameter" ;
+	parameter "Interaction angle" var:angleInteraction init:40.0 max:360.0 min:0.0 category:"Interaction parameter"; 
 	parameter 'Perception range' var:perceptionRange init:2.0 category:"Interaction parameter" slider:false;
 	parameter 'Nervousness transmition' var:isNervousnessTransmition init:true category:"Interaction parameter";
+	parameter 'Empathy' var:empathy init:0.5 category:"Interaction parameter";
+	
+	
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
@@ -48,7 +53,7 @@ experiment helbingPanicSimulation type: gui
 	
 	output
 	{
-		display SocialForceModel_display
+		display SocialForceModel_display type:opengl
 		{
 			species interactionPeople;
 			species wall;
@@ -57,9 +62,18 @@ experiment helbingPanicSimulation type: gui
 			
 		}
 		
-		display SocialForceModel_Field type: opengl {
+		display SocialForceModel_Field {
             species field aspect:aspectNervousness;
         }
+        
+        display SocialForceModel_FieldTotal {
+            species field aspect:aspectNervousnessTotal;
+        }
+        
+        display SocialForceModel_FieldTemporal {
+            species field aspect:aspectNervousnessTemporal;
+        }
+        
 		
 		display SocialForceModel_NBinteractionPeople
 		{
