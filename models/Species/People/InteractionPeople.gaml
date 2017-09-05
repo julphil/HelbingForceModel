@@ -264,17 +264,17 @@ species interactionPeople parent:panicPeople
 	
 	action computeNervousnessEmpathy
 	{
-		if 	interactionType = "Mean"
-		{
-			nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
-		}
-		else if interactionType = "Maximum" or interactionType = "BiasedFortuneWheel"
-		{
+//		if 	interactionType = "Mean"
+//		{
+//			nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
+//		}
+//		else if interactionType = "Maximum" or interactionType = "BiasedFortuneWheel"
+//		{
 			if nbNeighbour > 0 {
 				nervousness <- (1-empathy)*nervousness + empathy*neighbourNervoussness;
 			}
 			
-		}
+//		}
 		lastNervousness <- nervousness;
 	}
 	
