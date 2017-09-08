@@ -36,6 +36,9 @@ global
 
 	//Range of the repulsive interactions
 	float Bi min: 0.0 <- 0.08;
+	
+	//Distance beyond force calculus are avoid
+	float calculRange min: 0.0 <- 1;
 
 	//Peception [0,1] => 0 -> 0° and 1 -> 360°
 	float lambda min: 0.0 max: 1.0 <- 0.5;

@@ -94,50 +94,54 @@ species interactionPeople parent:panicPeople
 				
 				float distanceCenter <- matDistances[int(myself),0];
 				
-				float distance <- distanceCenter -(self.size+myself.size);
-				point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
-				//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
-				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
-				float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
-				float repulsion <- Ai * exp(-distance / Bi);
-				
-				
-				
-				//Social force
-				social_repulsion_force <- {
-				social_repulsion_force.x + (repulsion * nij.x * vision), social_repulsion_force.y + (repulsion * nij.y *vision)
-				};
-				
-				//Physical force
-				if (distance <= size)
+				if distanceCenter < calculRange
 				{
-					float theta;
+				write "top";
+					float distance <- distanceCenter -(self.size+myself.size);
 					
-					if (-distance <= 0.0) { //If there is no contact
-						theta <- 0.0;
-					} else {
-						theta <- -distance;
+					point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
+					//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
+					float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
+					float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
+					float repulsion <- Ai * exp(-distance / Bi);
+					
+					
+					//Social force
+					social_repulsion_force <- {
+					social_repulsion_force.x + (repulsion * nij.x * vision), social_repulsion_force.y + (repulsion * nij.y *vision)
+					};
+					
+					//Physical force
+					if (distance <= size)
+					{
+						float theta;
+						
+						if (-distance <= 0.0) { //If there is no contact
+							theta <- 0.0;
+						} else {
+							theta <- -distance;
+						}
+		
+						point tij <- {-nij.y,nij.x};
+						
+						float deltaVitesseTangencielle <- 
+							(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
+						
+						physical_repulsion_force <- {
+							physical_repulsion_force.x + body * theta * nij.x,
+							physical_repulsion_force.y + body * theta * nij.y
+						};
+						
+						physical_tangencial_force <- {
+							physical_tangencial_force.x + friction * theta * deltaVitesseTangencielle * tij.x,
+							physical_tangencial_force.y + friction * theta * deltaVitesseTangencielle * tij.y
+						};
+						
 					}
-	
-					point tij <- {-nij.y,nij.x};
-					
-					float deltaVitesseTangencielle <- 
-						(actual_velocity.x - myself.actual_velocity.x)*tij.x + (actual_velocity.y - myself.actual_velocity.y)*tij.y;
-					
-					physical_repulsion_force <- {
-						physical_repulsion_force.x + body * theta * nij.x,
-						physical_repulsion_force.y + body * theta * nij.y
-					};
-					
-					physical_tangencial_force <- {
-						physical_tangencial_force.x + friction * theta * deltaVitesseTangencielle * tij.x,
-						physical_tangencial_force.y + friction * theta * deltaVitesseTangencielle * tij.y
-					};
-					
 				}
 			}
 		}
-
+		
 		people_forces <- {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
