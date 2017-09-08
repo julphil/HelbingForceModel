@@ -29,10 +29,7 @@ experiment helbingPanicSimulation type: gui
 	parameter "Temporal Interval Lengrh" var:intervalLength category:"Simulation parameter" init:1000 unit:"cycle" min:1;
 	
 	
-	parameter 'State changing type' var: stateChangingType among:["Always","Pure random","Random based on nervousness","Nervousness threshold"] init:"Always" category:"Interaction parameter" ;
-	parameter 'State changing threshold' var: stateChangingThreshold category:"Interaction parameter" slider:false init:0.5;
-	parameter 'Interaction choice' var: interactionType among:["One neighbour","Majority","Mean","Maximum","BiasedFortuneWheel"] init:"Mean" category:"Interaction parameter" ;
-	parameter 'Neighbour choice' var: neighbourType among:["Closest","Random"] init:"Random" category:"Interaction parameter" ;
+	parameter 'Interaction choice' var: interactionType among:["Mean","Maximum","BiasedFortuneWheel"] init:"Mean" category:"Interaction parameter" ;
 	parameter 'Has a 360° perception' var:is360 init:true category:"Interaction parameter" ;
 	parameter "Interaction angle" var:angleInteraction init:40.0 max:360.0 min:0.0 category:"Interaction parameter"; 
 	parameter 'Perception range' var:perceptionRange init:2.0 category:"Interaction parameter" slider:false;
