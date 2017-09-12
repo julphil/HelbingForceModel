@@ -20,8 +20,13 @@ global
 	float averageSpeed;
 	float meanOrientedSpeed;
 	int nbNervoussPeople;
-	
 	int peopleOut;
+	
+	float nb_interactionPeopleAVG;
+	float meanNervousnessAVG;
+	float averageSpeedAVG;
+	float meanOrientedSpeedAVG;
+	int nbNervoussPeopleAVG;
 	
 	list<int> nervousityDistribution;
 	
@@ -205,6 +210,8 @@ global
 		
 		do setMax;
 		
+		do computeAverage;
+		
 		do saveData;
 	}
 	
@@ -304,6 +311,15 @@ global
 
 	}
 	
+	action computeAverage
+	{
+		nb_interactionPeopleAVG <- nb_interactionPeopleAVG + nb_interactionPeople;
+		meanNervousnessAVG <- meanNervousnessAVG +meanNervousness;
+		averageSpeedAVG <- averageSpeedAVG +averageSpeed;
+		meanOrientedSpeedAVG <- meanOrientedSpeedAVG +meanOrientedSpeed;
+		nbNervoussPeopleAVG <- nbNervoussPeopleAVG +nbNervoussPeople;
+	}
+	
 	action saveData
 	{
 		if cycle  mod ((1/deltaT) as int) = 0 and outputFileName != "null"
@@ -314,9 +330,21 @@ global
 			outFileData <- outFileData + "," + nbNervoussPeople;
 			outFileData <- outFileData + "," + averageSpeed;
 			outFileData <- outFileData + "," + meanOrientedSpeed/deltaT;
+			outFileData <- outFileData + "," + peopleOut/(cycle+1)/deltaT;
 			
 			
 			save outFileData to:outputFileName +".csv" rewrite:false;
+			
+			outFileData <- "";
+			outFileData <- outFileData + "" + nb_interactionPeopleAVG/(cycle+1);
+			outFileData <- outFileData + "," + meanNervousnessAVG/(cycle+1);
+			outFileData <- outFileData + "," + nbNervoussPeopleAVG/(cycle+1);
+			outFileData <- outFileData + "," + averageSpeedAVG/(cycle+1);
+			outFileData <- outFileData + "," + meanOrientedSpeedAVG/(cycle+1)/deltaT;
+			outFileData <- outFileData + "," + peopleOut/(cycle+1)/deltaT;
+			
+			
+			save outFileData to:outputFileName +"_average.csv" rewrite:true;
 			
 			string maxData <- 
 			"Number of people succeding escape : " + nbPeopleOut + "\n" +
