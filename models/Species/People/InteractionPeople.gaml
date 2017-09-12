@@ -96,6 +96,7 @@ species interactionPeople parent:panicPeople
 				
 				if distanceCenter < calculRange
 				{
+				write "top";
 					float distance <- distanceCenter -(self.size+myself.size);
 					
 					point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
@@ -144,21 +145,47 @@ species interactionPeople parent:panicPeople
 		people_forces <- {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
-	action spreadNervousness
+	action colorChoice
 	{
 		neighbourNervoussness <- 0.0;
 		nbNeighbour <- 0;
 		
-		if( !empty(interaction))
+		if( !empty(interaction) and ( 
+			(stateChangingType = "Always") or
+			(stateChangingType = "Random based on nervousness" and (rnd(1000) / 1000)< nervousness) or
+			(stateChangingType = "Pure random" and (rnd(1000) / 1000)> stateChangingThreshold) or
+			(stateChangingType = "Nervousness threshold" and nervousness > stateChangingThreshold)
+			)
+		)
 		{
-			if interaction contains nil
+			if interactionType = "One neighbour"
+			{
+				//One neighbour
+				interactionPeople neighbour<- nil;
+				if neighbourType = "Closest"
+				{
+					neighbour <- interaction closest_to self;				
+				} else
+				{
+					neighbour <- one_of(interaction);
+				}
+				
+				
+				if neighbour != nil
+				{
+					n_color <- neighbour.color;
+					neighbourNervoussness <- neighbour.nervousness;
+					nbNeighbour <- 1;
+				}
+			}
+			else if 	interactionType = "Mean"
+			{
+				int le <- length(interaction);
+				
+				if interaction contains nil
 				{
 					remove nil all:true  from: interaction; 	
 				}
-			
-			if 	interactionType = "Mean"
-			{
-				int le <- length(interaction);
 				
 				loop p over:interaction {
 					if !dead(p)
@@ -174,6 +201,10 @@ species interactionPeople parent:panicPeople
 			{
 				float max <- 0.0;
 
+				if interaction contains nil
+				{
+					remove nil all:true  from: interaction; 	
+				}
 				
 				loop p over:interaction {
 					if !dead(p) and p.nervousness > max
@@ -187,6 +218,10 @@ species interactionPeople parent:panicPeople
 			}
 			else if interactionType = "BiasedFortuneWheel"
 			{
+				if interaction contains nil
+				{
+					remove nil all:true  from: interaction; 	
+				}
 				
 				float lastProb <- 0.0;
 				nbNeighbour <- length(interaction);
@@ -233,10 +268,17 @@ species interactionPeople parent:panicPeople
 	
 	action computeNervousnessEmpathy
 	{
-		if nbNeighbour > 0 {
-			nervousness <- (1-empathy)*nervousness + empathy*neighbourNervoussness;
-		}
+//		if 	interactionType = "Mean"
+//		{
+//			nervousness <- (nervousness + neighbourNervoussness*nbNeighbour)/(nbNeighbour+1);
+//		}
+//		else if interactionType = "Maximum" or interactionType = "BiasedFortuneWheel"
+//		{
+			if nbNeighbour > 0 {
+				nervousness <- (1-empathy)*nervousness + empathy*neighbourNervoussness;
+			}
 			
+//		}
 		lastNervousness <- nervousness;
 	}
 	
