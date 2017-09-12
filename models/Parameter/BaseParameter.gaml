@@ -74,5 +74,7 @@ global
 	int nbPeopleOut <- 0;
 	
 	
+	int indexPassing <-1;
+	
 }
 

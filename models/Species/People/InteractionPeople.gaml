@@ -23,6 +23,8 @@ species interactionPeople parent:panicPeople
  	//Interaction agent
  	list<interactionPeople> interaction;
  	
+ 	int verifPassing <- 0;
+ 	
 	init
 	{
 		n_color <- d_color;

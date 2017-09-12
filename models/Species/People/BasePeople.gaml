@@ -51,6 +51,8 @@ species basePeople
 	
 	//Distance withall other agent
 	matrix matDistances;
+	
+	int checkPassing <- 0;
  	
 	init
 	{
@@ -126,7 +128,7 @@ species basePeople
 	
 	//Choose the destination point
 	action aim
-	{
+	{write "451";
 		if location.x>(lAim[indexAim].key as point).x and location.x<lAim[indexAim].value.x and location.y>(lAim[indexAim].key as point).y and location.y<lAim[indexAim].value.y
 		{
 			indexAim <- indexAim+1;
@@ -328,6 +330,11 @@ species basePeople
 				sum <- sum + i;
 			}
 		}
+	}
+	
+	action checking
+	{
+		checkPassing <- 2;
 	}
 
 	aspect default

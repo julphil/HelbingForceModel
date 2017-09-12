@@ -21,6 +21,7 @@ global
 	float meanOrientedSpeed;
 	int nbNervoussPeople;
 	int peopleOut;
+	int peoplePass;
 	
 	float nb_interactionPeopleAVG;
 	float meanNervousnessAVG;
@@ -152,6 +153,17 @@ global
 		ask interactionPeople parallel:true{
 			do aim;
 		}
+		
+		ask interactionPeople 
+		{
+			if checkPassing = 1
+			{
+				myself.peoplePass <- myself.peoplePass + 1;
+				do checking;			
+			}
+			 
+		}
+		write peoplePass;
 	
 		ask interactionPeople parallel:true{
 			do computeForce;	
@@ -330,7 +342,8 @@ global
 			outFileData <- outFileData + "," + nbNervoussPeople;
 			outFileData <- outFileData + "," + averageSpeed;
 			outFileData <- outFileData + "," + meanOrientedSpeed/deltaT;
-			outFileData <- outFileData + "," + peopleOut/(cycle+1)/deltaT;
+			outFileData <- outFileData + "," + peopleOut;
+			outFileData <- outFileData + "," + peoplePass;
 			
 			
 			save outFileData to:outputFileName +".csv" rewrite:false;
@@ -342,6 +355,7 @@ global
 			outFileData <- outFileData + "," + averageSpeedAVG/(cycle+1);
 			outFileData <- outFileData + "," + meanOrientedSpeedAVG/(cycle+1)/deltaT;
 			outFileData <- outFileData + "," + peopleOut/(cycle+1)/deltaT;
+			outFileData <- outFileData + "," + peoplePass/(cycle+1)/deltaT;
 			
 			
 			save outFileData to:outputFileName +"_average.csv" rewrite:true;

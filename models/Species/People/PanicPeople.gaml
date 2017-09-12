@@ -117,6 +117,11 @@ species panicPeople parent:basePeople
 		{
 			indexAim <- indexAim+1;
 			aimZone <- polygon([lAim[indexAim].key as point,{(lAim[indexAim].key as point).x,lAim[indexAim].value.y},lAim[indexAim].value,{lAim[indexAim].value.x,(lAim[indexAim].key as point).y}]);
+			
+			if indexAim >= indexPassing
+			{
+				checkPassing <- 1;
+			}
 		}
 		
 		aim <-  closest_points_with(location,aimZone)[1];
