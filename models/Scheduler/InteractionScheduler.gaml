@@ -107,25 +107,33 @@ global
 		calculRange <- calculRange + pedSizeMin*2;
 	}
 	
+	action count
+	{
+		
+		nb_interactionPeople <- length(interactionPeople);
+		
+	}
+	
 	reflex count
 	{
-		nb_interactionPeople <- length(interactionPeople);
+		do count;
 	}
 	
 	reflex scheduler
 	{	
-		
 		do spawn;
-		
+		do count;
+
 		ask interactionPeople{
 			do resetStepValue;
 		}
 		
 		ask interactionPeople{
-			//bool dead <- false;
 			do sortie;
-			//if (dead)   { write true;}
 		}
+		int nb_interactionPeopleTMP <- nb_interactionPeople;
+		do count;
+		peopleOut <- peopleOut + (nb_interactionPeopleTMP - nb_interactionPeople);
 		
 		ask interactionPeople parallel:true
 		{
@@ -156,7 +164,7 @@ global
 		ask interactionPeople parallel:true
 		{
 			do computeNervousness;
-			do setColor;
+			
 		}
 		
 		if (isNervousnessTransmition)
@@ -164,17 +172,9 @@ global
 			ask interactionPeople parallel:true
 			{
 				do computeNervousnessEmpathy;
+				do setColor;
 			}
 		}
-		
-//		lcolor <- [];
-//		ask interactionPeople
-//		{
-//			if !(lcolor contains self.color)
-//			{
-//				add self.color to: lcolor;
-//			}
-//		} 
 		
 		nervousityDistribution <- list_with(12,0);
 		

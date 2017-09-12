@@ -160,11 +160,6 @@ species interactionPeople parent:panicPeople
 			{
 				int le <- length(interaction);
 				
-//				if interaction contains nil
-//				{
-//					remove nil all:true  from: interaction; 	
-//				}
-				
 				loop p over:interaction {
 					if !dead(p)
 					{
@@ -178,11 +173,6 @@ species interactionPeople parent:panicPeople
 			else if interactionType = "Maximum"
 			{
 				float max <- 0.0;
-
-//				if interaction contains nil
-//				{
-//					remove nil all:true  from: interaction; 	
-//				}
 				
 				loop p over:interaction {
 					if !dead(p) and p.nervousness > max
@@ -196,10 +186,6 @@ species interactionPeople parent:panicPeople
 			}
 			else if interactionType = "BiasedFortuneWheel"
 			{
-//				if interaction contains nil
-//				{
-//					remove nil all:true  from: interaction; 	
-//				}
 				
 				float lastProb <- 0.0;
 				nbNeighbour <- length(interaction);
