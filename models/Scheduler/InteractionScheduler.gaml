@@ -21,7 +21,7 @@ global
 	float meanOrientedSpeed;
 	int nbNervoussPeople;
 	
-	int peopleOUt;
+	int peopleOut;
 	
 	list<int> nervousityDistribution;
 	
