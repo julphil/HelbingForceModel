@@ -96,7 +96,6 @@ species interactionPeople parent:panicPeople
 				
 				if distanceCenter < calculRange
 				{
-				write "top";
 					float distance <- distanceCenter -(self.size+myself.size);
 					
 					point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
@@ -145,7 +144,7 @@ species interactionPeople parent:panicPeople
 		people_forces <- {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
-	action colorChoice
+	action spreadNervousness
 	{
 		neighbourNervoussness <- 0.0;
 		nbNeighbour <- 0;
@@ -261,7 +260,7 @@ species interactionPeople parent:panicPeople
 		}
 }
 	
-	action colorPropagation
+	action setColor
 	{
 		color <- rgb(255*nervousness,255-255*nervousness,0.0);
 	}
