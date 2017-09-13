@@ -1,8 +1,7 @@
 /**
 * Name: InteractionPeople
 * Author: julien
-* Description: 
-* Tags: Tag1, Tag2, TagN
+* Description: Agents of this species are mobile agents interacting whith eachother to communicate emotion/information
 */
 
 model InteractionPeople
@@ -14,15 +13,16 @@ species interactionPeople parent:panicPeople
 {
 	rgb d_color;
 	rgb n_color;
-	float neighbourNervoussness;
-	int nbNeighbour;
-	float lastNervousness;
+	float neighbourNervoussness; //Nervousness transmit by interacting neighbours
+	int nbNeighbour; 
+	float lastNervousness; //For the transmition, we always use the total nervousness (inner + neighbours) of the last instant, to avoid problème of order
 	
-	list<int> nervousityDistributionMark;
+	list<int> nervousityDistributionMark; //Use to know the repartition of nervous people in the spce
  
- 	//Interaction agent
+ 	//Interaction agents
  	list<interactionPeople> interaction;
  	
+ 	//Var use to know if the agent pass the strategic area : 0 if not, 2 if yes, and 1 to indicated that he pass but the global agent didn't count it yet
  	int verifPassing <- 0;
  	
 	init
@@ -32,26 +32,27 @@ species interactionPeople parent:panicPeople
 		nervousityDistributionMark <- list_with(12,0);
 	}
 
+	//Set contener variables empty
 	action resetStepValue
 	{
 		matDistances <- nil as_matrix({number_of_people,1});
 		interaction <- [];
 	}
 	
+	//Calculate all distance between this agent and all other agents
 	action computeDistance
 	{	
 		ask interactionPeople parallel:true 
 		{
 			if self != myself and int(self) < length(myself.matDistances)
 			{
-				//if int(self) > length(myself.matDistances) {write "" + cycle + " " + name + " " + length(matDistances) + " " + length(myself.matDistances);}
-				if(matDistances[int(myself),0] != nil)
+				if(matDistances[int(myself),0] != nil) //If the other agent has already done the calculus,  we take his result
 				{
 					myself.matDistances[int(self),0] <- matDistances[int(myself),0];
 				} else {
 					myself.matDistances[int(self),0] <-  norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
 				}
-			} else if int(self) > length(myself.matDistances)
+			} else if int(self) > length(myself.matDistances) //The case is not suppose to happend, if it happend, it's a bug
 			{
 				write location;
 			}
@@ -59,17 +60,17 @@ species interactionPeople parent:panicPeople
 		
 	}
 	
+	//Determine which other agents are in the range of interaction, all agents in the range is add to a list 
 	action setInteraction
 	{
 		ask interactionPeople 
 		{
 			if self != myself
 			{
-				float distanceCenter <- matDistances[int(myself),0];
-					
-					float distance <- distanceCenter -(self.size+myself.size);
-					point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
-					float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
+				float distanceCenter <- matDistances[int(myself),0];	
+				float distance <- distanceCenter -(self.size+myself.size);
+				point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
+				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
 				
 				if ((perceptionRange < 0.0 or float(matDistances[int(myself),0]) < perceptionRange) and (is360 or (acos(phiij) < angleInteraction and acos(phiij) > -angleInteraction) or acos(phiij) > 360-angleInteraction) )
 					{
@@ -96,12 +97,12 @@ species interactionPeople parent:panicPeople
 				
 				float distanceCenter <- matDistances[int(myself),0];
 				
+				//If agents are too far away  forces are negligible, so it's more optimized to not compute it
 				if distanceCenter < calculRange
 				{
 					float distance <- distanceCenter -(self.size+myself.size);
 					
 					point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
-					//float phiij <- -nij.x * actual_velocity.x / (norm(actual_velocity) + 0.0000001) + -nij.y * actual_velocity.x / (norm(actual_velocity) + 0.0000001);
 					float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
 					float vision <- (lambda + (1 - lambda) * (1 + phiij) / 2);
 					float repulsion <- Ai * exp(-distance / Bi);
@@ -146,6 +147,7 @@ species interactionPeople parent:panicPeople
 		people_forces <- {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
 	
+	//Compute the nervousness neighbours transmit to the agent
 	action spreadNervousness
 	{
 		neighbourNervoussness <- 0.0;
@@ -227,11 +229,13 @@ species interactionPeople parent:panicPeople
 		}
 }
 	
+	//Set the color of the agent based on nervousness value
 	action setColor
 	{
 		color <- rgb(255*nervousness,255-255*nervousness,0.0);
 	}
 	
+	//Set the total value of nervousness with a compromise between the agent inner nervousness and his neighbours's blanced with a empathy coefficient
 	action computeNervousnessEmpathy
 	{
 			if nbNeighbour > 0 {
@@ -263,6 +267,7 @@ species interactionPeople parent:panicPeople
 		}
 	}
 	
+	//The agent mark the cell (in the nervousnees field) he is on with his nervousness
 	action cellMark {
 		ask field[(self.location.x) as int,(self.location.y) as int]
 		{
@@ -270,6 +275,7 @@ species interactionPeople parent:panicPeople
 		}
 	}
 	
+	//This aspect his made to visulazed interaction
 	aspect graph
 	{
 		float rayon <- number_of_people/(2*#pi);
@@ -291,12 +297,15 @@ species interactionPeople parent:panicPeople
 
 }
 
+//This grid represent the nervousness field, it allows us to survey nervousness propagation 
 grid field width:spaceLength height:spaceWidth {
-	list<interactionPeople> insider;
-	bool isWall;
+	list<interactionPeople> insider; //People inside the cell
+	bool isWall; //If this cell is occupied by a wall, the nervousness is nul
+	//3 color, one for instant, other for the interval we choose and the last is the average nervousness along the simulation 
 	rgb cellColor;
 	rgb cellColorTotal;
 	rgb cellColorTemporal;
+	
 	
 	float instantAverageNerv;
 	float instantCumuledNerv;
@@ -306,7 +315,7 @@ grid field width:spaceLength height:spaceWidth {
 	float temporalNerv;
 	float chargeNerv;
 	
-	int cptCharge;
+	int cptCharge;//Use to reset the value when the current interval is over and a new one begin
 	int cptActiv;
 	
 	int nbCycle;
@@ -327,7 +336,8 @@ grid field width:spaceLength height:spaceWidth {
 		cptActiv <- 0;
 		
 		do setColor;
-		
+	
+		//A cell whitout agent (so without nervousness within) must be white, when cells with agent but with a value of nervousness of 0.0 are blue	
 		cellColor <- #white;
 		cellColorTotal <- #white;	
 		cellColorTemporal <- #white;
@@ -340,9 +350,11 @@ grid field width:spaceLength height:spaceWidth {
 		instantCumuledNerv <- 0.0;
 	}
 	
+	//if an agent is in this cell, he must be add to the list
 	action addAgent(agent a) {
 		add a as interactionPeople to:insider;
 	}
+	
 	
 	action setColor
 	{

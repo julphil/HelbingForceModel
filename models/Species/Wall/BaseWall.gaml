@@ -13,6 +13,7 @@ species wall schedules: []
 {
 	float width;
 	float length;
+	//Location of the center of the wall, (not the upper left angle)
 	float locationX;
 	float locationY;
 	

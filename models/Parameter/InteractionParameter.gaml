@@ -10,17 +10,14 @@ model InteractionParameter
 global
 {
 	//Propagation parameter
-	string stateChangingType;
-	float  stateChangingThreshold min:0.01 max:1.0;
-	string neighbourType;
 	string interactionType;
 	bool is360;
 	float perceptionRange min:-1.0 max:30.0;
 	bool isNervousnessTransmition;
-	
 	float empathy <- 0.0;
 	float angleInteraction;
 	
+	//Duration of the interval in which we mesure nervousness in the simulated space
 	int intervalLength;
 }
 

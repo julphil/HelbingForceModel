@@ -60,8 +60,10 @@ global
 	
 	int lastCycle <- -1;
 	
+	//To know if forces are display
 	bool arrow;
 	
+	//machine error
 	float epsilon <- 0.0000001;
 	
 	
@@ -70,10 +72,10 @@ global
 	string outFileData;
 	
 	
-	
+	//How many agents have left the
 	int nbPeopleOut <- 0;
 	
-	
+	//In the list of area agents must consecutively reach, it's the index of the one which is the "strategic area" (lick a bottleneck)
 	int indexPassing <-1;
 	
 }

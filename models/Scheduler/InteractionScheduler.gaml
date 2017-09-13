@@ -11,11 +11,12 @@ import "../Species/People/InteractionPeople.gaml"
 
 global
 {
+	matrix data; //Data file to create the space 
 	
 	//Simulation survey
+	//At each moment
 	int nb_interactionPeople <- number_of_people;
 	list<rgb> lcolor;
-	matrix data;
 	float meanNervousness;
 	float averageSpeed;
 	float meanOrientedSpeed;
@@ -23,49 +24,59 @@ global
 	int peopleOut;
 	int peoplePass;
 	
+	//Average value along the simulation
 	float nb_interactionPeopleAVG;
 	float meanNervousnessAVG;
 	float averageSpeedAVG;
 	float meanOrientedSpeedAVG;
 	int nbNervoussPeopleAVG;
 	
-	list<int> nervousityDistribution;
-	
-	list<list> typeAgent;
-	list<pair<int,int>> ArrivalTimes;
-	int cptArrival <- 0;
-	
-	//maxValue <cycle,value>
+	//Max value
 	pair<int,int> maxNervousPeople <- -1::0;
 	pair<int,float> maxNervousness <- -1::0.0;
 	pair<int,int> maxPeopleIn <- -1::0;
 	pair<int,pair<float,float>> maxSpeed <- -1::(0.0::0.0);
 	pair<int,pair<float,float>> maxOrientedSpeed <- -1::(0.0::0.0);
 	pair<int,float> maxSpeedDifference <- -1::0.0;
+	
+	//Nervousness field
 	matrix<float> nervousnessMap;
 	matrix<float> cumuledNervousnessMap;
 	matrix<float> temporalNervousnessMap;
 	
+	//depreciated
+	list<int> nervousityDistribution;
+	
+	//Value use for the generation by Poisson process
+	list<list> typeAgent;
+	list<pair<int,int>> ArrivalTimes;
+	int cptArrival <- 0;
 	
 	//Agent creation
 	init
 	{	
+		//Reading data file
 		file dataFile <- csv_file(dataFileName,",");
 		data <- matrix(dataFile);
 		
 		int cpt <- 0;
+		//Each row is an item (a wall or a set of agents)
 		loop i from:0 to:data.rows-1
 		{
 			if data[0,i] = "agent" {
+				//Set the aim area
 				list<pair<point>> listAim;
 				loop index from:7  to:data.columns-4 step:4 {
 					add {data[index,i] as float,data[index+1,i] as float}::{data[index+2,i] as float,data[index+3,i] as float} to:listAim;
 				}
 				
+				//create one agent to start the simulation
 				create interactionPeople number:1 with:[init_color::data[1,i],pointAX::data[3,i],pointAY::data[4,i],pointBX::data[5,i],pointBY::data[6,i],lAim::listAim];
 				
+				//Create a type of agent, use each time on agent spawn
 				add [data[1,i],data[2,i],data[3,i],data[4,i],data[5,i],data[6,i],listAim]  to:typeAgent;
 				
+				//Poisson process
 				list<pair<int,int>> tempArrivalTimes;
 				int lastTime <- 0;
 				
@@ -78,11 +89,12 @@ global
 				
 				cpt <- cpt +1;
 				
-			} else if data[0,i] = "wall" {
+			} else if data[0,i] = "wall" { //Wall creatoion
 				create wall with:[locationX::data[1,i],locationY::data[2,i],length::data[3,i],width::data[4,i]];
 			} 
 		}
 		
+		//We need to sort arrival times because in the case where we have different type of agents, arrival are set for each type one after another
 		ArrivalTimes <- ArrivalTimes sort_by each.key;
 		
 		
@@ -92,6 +104,7 @@ global
 		
 		nervousityDistribution <- list_with(12,0);
 		
+		//Prepare the file in which the data out
 		outFileData <- "cycle,number of peoples,Average nervousness,number of nervous peoples,average speed,average speed in the goal direction";
 		save outFileData to:outputFileName +".csv" rewrite:true;	
 		
@@ -106,13 +119,17 @@ global
 			}
 		}
 		
+		//Prepare the nervousness field with the simulated are size
 		nervousnessMap <- matrix_with({spaceLength,spaceWidth},0.0);
 		cumuledNervousnessMap <- matrix_with({spaceLength,spaceWidth},0.0);
 		temporalNervousnessMap <- matrix_with({spaceLength,spaceWidth},0.0);
 		
+		//Rely on Ai and Bi
 		calculRange <- calculRange + pedSizeMin*2;
 	}
 	
+	
+	//Count thenumber of agents in the simulated area
 	action count
 	{
 		
@@ -125,35 +142,45 @@ global
 		do count;
 	}
 	
+	//Scheduler of action the simulation perform at each step
 	reflex scheduler
 	{	
+		//First we generate the agent for whom it's the arrival time
 		do spawn;
 		do count;
 
+		//Clean some variables
 		ask interactionPeople{
 			do resetStepValue;
 		}
 		
+		//Delete agent who left the simulation (only the one who really left, not the one who are out because they spawn here
 		ask interactionPeople{
 			do sortie;
 		}
+		
+		//We count how many people where deleted cause they were out
 		int nb_interactionPeopleTMP <- nb_interactionPeople;
 		do count;
 		peopleOut <- peopleOut + (nb_interactionPeopleTMP - nb_interactionPeople);
 		
+		//Compute the distantce between all agents
 		ask interactionPeople parallel:true
 		{
 			do computeDistance;
 		}
 		
+		//For each agent we set his neighbourhood in the interacton network
 		ask interactionPeople parallel:true{
 			do setInteraction;
 		}
 		
+		//Set the destination of the agent
 		ask interactionPeople parallel:true{
 			do aim;
 		}
 		
+		//Count how many people have pass the strategic area
 		ask interactionPeople 
 		{
 			if checkPassing = 1
@@ -164,25 +191,30 @@ global
 			 
 		}
 	
+		//Compute the force system applying on every agent
 		ask interactionPeople parallel:true{
 			do computeForce;	
 		}
 		
+		//With the force system, compute velocity and mouvement
 		ask interactionPeople {
 			do computeVelocity;
 			do mouvement;
 		}
 		
+		//Compute the nervousness transmit by the neighborhood
 		ask interactionPeople parallel:true{
 			do spreadNervousness;	
 		}
 		
+		//Compute the inner nervousness
 		ask interactionPeople parallel:true
 		{
 			do computeNervousness;
 			
 		}
 		
+		//Compose finla nervousnnes with inner and neighborhood
 		if (isNervousnessTransmition)
 		{
 			ask interactionPeople parallel:true
@@ -192,29 +224,32 @@ global
 			}
 		}
 		
-		nervousityDistribution <- list_with(12,0);
-		
-		ask interactionPeople parallel:true
-		{
-			do nervousnessMark;
-		}
-		
-		ask interactionPeople
-		{
-			loop i from:0 to:length(nervousityDistributionMark)-1 {
-				nervousityDistribution[i] <- nervousityDistribution[i] + nervousityDistributionMark[i]; 
-			}
-		}
+//		nervousityDistribution <- list_with(12,0);
+//		
+//		//Depreciated, must be deleted soon
+//		ask interactionPeople parallel:true
+//		{
+//			do nervousnessMark;
+//		}
+//		
+//		ask interactionPeople
+//		{
+//			loop i from:0 to:length(nervousityDistributionMark)-1 {
+//				nervousityDistribution[i] <- nervousityDistribution[i] + nervousityDistributionMark[i]; 
+//			}
+//		}
 		
 		ask field parallel:true {
 			do reset;
 		}
 		
+		//Mark the field
 		ask interactionPeople
 		{
 			do cellMark;
 		}
 		
+		//Set color of each cells based on the nervousness
 		ask field parallel:true{
 			do setColor;
 		}
@@ -234,6 +269,7 @@ global
 		}
 		do pause;
 	}
+	
 	
 	reflex meanNervousness_count
 	{
@@ -292,6 +328,7 @@ global
 		}
 	}
 	
+	//Spawn agents with the arrival time set on the initialisation
 	action spawn
 	{
 		loop while:cptArrival<length(ArrivalTimes) and ArrivalTimes[cptArrival].key <= cycle
@@ -330,6 +367,7 @@ global
 		nbNervoussPeopleAVG <- nbNervoussPeopleAVG +nbNervoussPeople;
 	}
 	
+	//Save data in files
 	action saveData
 	{
 		if cycle  mod ((1/deltaT) as int) = 0 and outputFileName != "null"
