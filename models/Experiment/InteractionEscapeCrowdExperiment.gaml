@@ -1,15 +1,12 @@
 /**
 * Name: InteractionEscapeCrowdExperiment
-* Author: julien
+* Author: Julien PHILIPPE
 * Description: 
-* Tags: Tag1, Tag2, TagN
 */
 
 model InteractionEscapeCrowdExperiment
 
 import "../Scheduler/InteractionScheduler.gaml"
-
-
 
 experiment helbingPanicSimulation type: gui
 {
@@ -35,7 +32,7 @@ experiment helbingPanicSimulation type: gui
 	parameter 'Nervousness transmition' var:isNervousnessTransmition init:true category:"Interaction parameter";
 	parameter 'Empathy' var:empathy init:0.5 category:"Interaction parameter";
 	
-	
+	parameter 'Passing zone index' var:indexPassing init:1 category:"Simlation parameter";
 	
 	parameter 'Space length' var: spaceLength category:"Space parameter" unit:"Meter";
 	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
@@ -138,7 +135,7 @@ experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPani
 
 experiment smallWorld type: gui parent:helbingPanicSimulation
 {
-		parameter 'Data file' init:"../Experiment/DataFiles/smallWorld.csv";
+	parameter 'Data file' init:"../Experiment/DataFiles/smallWorld.csv";
 	
 	parameter 'Space length' var: spaceLength init:10;
 	parameter 'Space width' var: spaceWidth init:10;

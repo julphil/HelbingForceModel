@@ -163,7 +163,6 @@ global
 			}
 			 
 		}
-		write peoplePass;
 	
 		ask interactionPeople parallel:true{
 			do computeForce;	
@@ -320,7 +319,6 @@ global
 			cumuledNervousnessMap[self.grid_x,self.grid_y] <- totalCumuledNerv;
 			temporalNervousnessMap[self.grid_x,self.grid_y] <- temporalNerv;
 		}
-
 	}
 	
 	action computeAverage
@@ -345,7 +343,6 @@ global
 			outFileData <- outFileData + "," + peopleOut;
 			outFileData <- outFileData + "," + peoplePass;
 			
-			
 			save outFileData to:outputFileName +".csv" rewrite:false;
 			
 			outFileData <- "";
@@ -356,7 +353,6 @@ global
 			outFileData <- outFileData + "," + meanOrientedSpeedAVG/(cycle+1)/deltaT;
 			outFileData <- outFileData + "," + peopleOut/(cycle+1)/deltaT;
 			outFileData <- outFileData + "," + peoplePass/(cycle+1)/deltaT;
-			
 			
 			save outFileData to:outputFileName +"_average.csv" rewrite:true;
 			
