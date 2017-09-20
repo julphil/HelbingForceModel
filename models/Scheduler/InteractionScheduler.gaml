@@ -52,6 +52,8 @@ global
 	list<pair<int,int>> ArrivalTimes;
 	int cptArrival <- 0;
 	
+	int realStartCycle <- -1;
+	
 	//Agent creation
 	init
 	{	
@@ -190,6 +192,14 @@ global
 			}
 			 
 		}
+		
+		if realStartCycle = -1 and peoplePass > 0
+		{
+			realStartCycle <- cycle;
+			write realStartCycle; 
+		}
+		
+		
 	
 		//Compute the force system applying on every agent
 		ask interactionPeople parallel:true{
@@ -223,21 +233,6 @@ global
 				do setColor;
 			}
 		}
-		
-//		nervousityDistribution <- list_with(12,0);
-//		
-//		//Depreciated, must be deleted soon
-//		ask interactionPeople parallel:true
-//		{
-//			do nervousnessMark;
-//		}
-//		
-//		ask interactionPeople
-//		{
-//			loop i from:0 to:length(nervousityDistributionMark)-1 {
-//				nervousityDistribution[i] <- nervousityDistribution[i] + nervousityDistributionMark[i]; 
-//			}
-//		}
 		
 		ask field parallel:true {
 			do reset;
@@ -360,11 +355,14 @@ global
 	
 	action computeAverage
 	{
-		nb_interactionPeopleAVG <- nb_interactionPeopleAVG + nb_interactionPeople;
-		meanNervousnessAVG <- meanNervousnessAVG +meanNervousness;
-		averageSpeedAVG <- averageSpeedAVG +averageSpeed;
-		meanOrientedSpeedAVG <- meanOrientedSpeedAVG +meanOrientedSpeed;
-		nbNervoussPeopleAVG <- nbNervoussPeopleAVG +nbNervoussPeople;
+		if realStartCycle > -1
+		{
+			nb_interactionPeopleAVG <- nb_interactionPeopleAVG + nb_interactionPeople;
+			meanNervousnessAVG <- meanNervousnessAVG +meanNervousness;
+			averageSpeedAVG <- averageSpeedAVG +averageSpeed;
+			meanOrientedSpeedAVG <- meanOrientedSpeedAVG +meanOrientedSpeed;
+			nbNervoussPeopleAVG <- nbNervoussPeopleAVG +nbNervoussPeople;
+		}
 	}
 	
 	//Save data in files
@@ -383,16 +381,20 @@ global
 			
 			save outFileData to:outputFileName +".csv" rewrite:false;
 			
-			outFileData <- "";
-			outFileData <- outFileData + "" + nb_interactionPeopleAVG/(cycle+1);
-			outFileData <- outFileData + "," + meanNervousnessAVG/(cycle+1);
-			outFileData <- outFileData + "," + nbNervoussPeopleAVG/(cycle+1);
-			outFileData <- outFileData + "," + averageSpeedAVG/(cycle+1);
-			outFileData <- outFileData + "," + meanOrientedSpeedAVG/(cycle+1)/deltaT;
-			outFileData <- outFileData + "," + peopleOut/(cycle+1)/deltaT;
-			outFileData <- outFileData + "," + peoplePass/(cycle+1)/deltaT;
-			
-			save outFileData to:outputFileName +"_average.csv" rewrite:true;
+			if realStartCycle > -1
+			{
+				outFileData <- "";
+				outFileData <- outFileData + "" + nb_interactionPeopleAVG/(cycle-realStartCycle+1);
+				outFileData <- outFileData + "," + meanNervousnessAVG/(cycle-realStartCycle+1);
+				outFileData <- outFileData + "," + nbNervoussPeopleAVG/(cycle-realStartCycle+1);
+				outFileData <- outFileData + "," + averageSpeedAVG/(cycle-realStartCycle+1);
+				outFileData <- outFileData + "," + meanOrientedSpeedAVG/(cycle-realStartCycle+1)/deltaT;
+				outFileData <- outFileData + "," + peopleOut/(cycle-realStartCycle+1)/deltaT;
+				outFileData <- outFileData + "," + peoplePass/(cycle-realStartCycle+1)/deltaT;
+				
+				save outFileData to:outputFileName +"_average.csv" rewrite:true;
+			}
+		
 			
 			string maxData <- 
 			"Number of people succeding escape : " + nbPeopleOut + "\n" +
