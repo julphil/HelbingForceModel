@@ -22,7 +22,7 @@ species interactionPeople parent:panicPeople
  	//Interaction agents
  	list<interactionPeople> interaction;
  	
- 	//Var use to know if the agent pass the strategic area : 0 if not, 2 if yes, and 1 to indicated that he pass but the global agent didn't count it yet
+ 	//Var use to know if the agent pass the strategic area : 0 if not, 2 if yes, and 1 to indicated that he pass but the global agent didn't count it yet 
  	int verifPassing <- 0;
  	
 	init
@@ -225,6 +225,23 @@ species interactionPeople parent:panicPeople
 						}
 					}
 				}
+			}
+			else if interactionPeople = "Closest"
+			{
+				interactionPeople closest <- interaction[0];
+				float dist <- matDistances[int(closest),0];
+				
+				loop p over:interaction
+				{
+					if !dead(p) and float(matDistances[int(p),0]) < dist
+					{
+						closest <- p;
+						dist <- matDistances[int(closest),0];
+					}
+				}
+				
+				neighbourNervoussness <- closest.lastNervousness;
+				nbNeighbour <- 1;
 			}		
 		}
 }

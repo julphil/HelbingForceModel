@@ -25,7 +25,7 @@ experiment helbingPanicSimulation type: gui
 	parameter "Simulation duration" var:simulationDuration category:"Simulation parameter" init: 30000 unit:"cycle";
 	parameter "Temporal Interval Lengrh" var:intervalLength category:"Simulation parameter" init:1000 unit:"cycle" min:1;
 	
-	parameter 'Interaction choice' var: interactionType among:["Mean","Maximum","BiasedFortuneWheel"] init:"Mean" category:"Interaction parameter" ;
+	parameter 'Interaction choice' var: interactionType among:["Mean","Maximum","BiasedFortuneWheel","Closest"] init:"Mean" category:"Interaction parameter" ;
 	parameter 'Has a 360° perception' var:is360 init:true category:"Interaction parameter" ;
 	parameter "Interaction angle" var:angleInteraction init:40.0 max:360.0 min:0.0 category:"Interaction parameter"; 
 	parameter 'Perception range' var:perceptionRange init:2.0 category:"Interaction parameter" slider:false;
