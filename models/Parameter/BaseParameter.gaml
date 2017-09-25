@@ -78,5 +78,8 @@ global
 	//In the list of area agents must consecutively reach, it's the index of the one which is the "strategic area" (lick a bottleneck)
 	int indexPassing <-1;
 	
+	//Simulation time
+	date simulationTime <- #now;
+	
 }
 

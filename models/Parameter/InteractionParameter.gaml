@@ -19,5 +19,8 @@ global
 	
 	//Duration of the interval in which we mesure nervousness in the simulated space
 	int intervalLength;
+	
+	//If true, the interaction graph must be write in a file
+	bool graphOutput <- true;
 }
 
