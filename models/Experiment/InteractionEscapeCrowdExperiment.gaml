@@ -12,6 +12,7 @@ experiment helbingPanicSimulation type: gui
 {
 	parameter 'Data file' var:dataFileName category:"Simulation parameter" init:"null";
 	parameter 'Output file' var:outputFileName category:"Simulation parameter" init:"null";
+	parameter 'Graph Output' var: graphOutput category:"Simulation parameter" init:false;
 	parameter 'Fluctuation type' var: fluctuationType among:["Speed","Vector"] init:"Speed" category:"Simulation parameter" ;
 	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second" init: 0.01;
 	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second" slider:false;

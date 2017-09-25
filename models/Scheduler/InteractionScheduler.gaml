@@ -267,7 +267,7 @@ global
 		
 		do saveData;
 		
-//		do writeGraphDGS;
+		do writeGraphDGS;
 	}
 	
 	//If agents does not respawn, pause the simulation at the time they're  no more agent in the simulation
@@ -434,27 +434,27 @@ global
 		}
 	}
 	
-//	action writeGraphDGS
-//	{
-//		if cycle  mod ((1/deltaT) as int) = 0 and graphOutput
-//		{
-//			outFileData <- "\nst :" + int(cycle*deltaT);
-//			string outEdge <- "\n";
-//			
-//			ask interactionPeople
-//			{
-//				outFileData <- outFileData + "\nan " + int(self) + " x:" + self.location.x + " y:" + self.location.y + " innerNerv:" + self.nervousness + " lastNerv:" + self.lastNervousness + " currentNerv:" + self.nervousness;
-//				
-//				loop p over:interaction
-//				{
-//					outEdge <- outEdge + "\nae " + int(self) + "to" + int(p) + " " + int(self) + " < " + int(p) + " nervpass:" + p.lastNervousness;
-//				}
-//				 
-//			} 
-//			
-//			save outFileData+outEdge to:outputFileName +"_graph.dgs" rewrite:false;
-//			
-//		}
-//	}
+	action writeGraphDGS
+	{
+		if cycle  mod ((1/deltaT) as int) = 0 and graphOutput
+		{
+			outFileData <- "\nst :" + int(cycle*deltaT) + "\ncl";
+			string outEdge <- "\n";
+			
+			ask interactionPeople
+			{
+				outFileData <- outFileData + "\nan " + int(self) + " x:" + self.location.x + " y:" + self.location.y + " innerNerv:" + self.nervousness + " lastNerv:" + self.lastNervousness + " currentNerv:" + self.nervousness;
+				
+				loop p over:interaction
+				{
+					outEdge <- outEdge + "\nae " + int(self) + "to" + int(p) + " " + int(self) + " < " + int(p) + " nervpass:" + p.lastNervousness;
+				}
+				 
+			} 
+			
+			save outFileData+outEdge to:outputFileName +"_graph.dgs" rewrite:false;
+			
+		}
+	}
 }
 

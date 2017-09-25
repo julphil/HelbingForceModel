@@ -21,6 +21,6 @@ global
 	int intervalLength;
 	
 	//If true, the interaction graph must be write in a file
-	bool graphOutput <- true;
+	bool graphOutput;
 }
 
