@@ -82,10 +82,23 @@ global
 				list<pair<int,int>> tempArrivalTimes;
 				int lastTime <- 0;
 				
-				loop while:lastTime<simulationDuration
+				if (data[2,i] as float) > 0.0
 				{
-					lastTime <- round(lastTime - 1/((data[2,i] as float) * deltaT)*ln(1-rnd(1.0)));
-					add lastTime::cpt to:tempArrivalTimes;
+					loop while:lastTime<simulationDuration
+					{
+						lastTime <- round(lastTime - 1/((data[2,i] as float) * deltaT)*ln(1-rnd(1.0)));
+						add lastTime::cpt to:tempArrivalTimes;
+					}
+				}
+				else
+				{
+					float nbCreate <- (data[2,i] as float)*-1;
+					
+					loop while:nbCreate >0.00001
+					{
+						add 0::cpt to:tempArrivalTimes;
+						nbCreate <- nbCreate -1;
+					}
 				}
 				ArrivalTimes <- ArrivalTimes + tempArrivalTimes;
 				
@@ -106,9 +119,7 @@ global
 		
 		nervousityDistribution <- list_with(12,0);
 		
-		//Prepare the file in which the data out
-		outFileData <- "cycle,number of peoples,Average nervousness,number of nervous peoples,average speed,average speed in the goal direction";
-		save outFileData to:outputFileName +".csv" rewrite:true;	
+		
 		
 		ask field
 		{
@@ -129,17 +140,22 @@ global
 		//Rely on Ai and Bi
 		calculRange <- calculRange + pedSizeMin*2;
 		
-		list var <- outputFileName split_with '/';
-		string tmpFileName <- replace(replace(replace(string(#now)," ",""),":",""),"-","") + "_" + last(var) ;
-		remove last(var) from:var;
+		//Add the simulation starting date at the begining of the output files names
+		list outPutFileNameDecompose <- outputFileName split_with '/';
+		string tmpFileName <- replace(replace(replace(string(#now)," ",""),":",""),"-","") + "_" + last(outPutFileNameDecompose) ;
+		remove last(outPutFileNameDecompose) from:outPutFileNameDecompose;
 		outputFileName <- "";
 		
 		
-		loop i over:var
+		loop i over:outPutFileNameDecompose
 		{
 			outputFileName <- outputFileName + i +"/";
 		}
 		outputFileName <- outputFileName + tmpFileName;
+		
+		//Prepare the file in which the data out
+		outFileData <- "cycle,number of peoples,Average nervousness,number of nervous peoples,average speed,average speed in the goal direction";
+		save outFileData to:outputFileName +".csv" rewrite:true;	
 	}
 	
 	
