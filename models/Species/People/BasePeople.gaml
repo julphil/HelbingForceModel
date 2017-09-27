@@ -128,7 +128,7 @@ species basePeople
 	
 	//Choose the destination point
 	action aim
-	{write "451";
+	{
 		if location.x>(lAim[indexAim].key as point).x and location.x<lAim[indexAim].value.x and location.y>(lAim[indexAim].key as point).y and location.y<lAim[indexAim].value.y
 		{
 			indexAim <- indexAim+1;

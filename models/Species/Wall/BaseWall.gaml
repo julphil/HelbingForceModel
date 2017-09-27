@@ -17,16 +17,32 @@ species wall schedules: []
 	float locationX;
 	float locationY;
 	
+	string type;
+	
 	init
 	{
 		location <- {locationX,locationY};
-		shape <- rectangle(length, width);
+		if type = "rectangle"
+		{
+			shape <- rectangle(length, width);
+		}
+		else if type = "circle"
+		{
+			shape <- circle(length);
+		}
 	}
 	
 
 	aspect default
 	{
-		draw rectangle(length, width) color: rgb(0, 0, 0);
+		if type = "rectangle"
+		{
+			draw rectangle(length, width) color: rgb(0, 0, 0);
+		}
+		else if type = "circle"
+		{
+			draw circle(length) color: rgb(0, 0, 0);
+		}
 	}
 
 }

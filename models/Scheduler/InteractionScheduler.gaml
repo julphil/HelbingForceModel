@@ -105,7 +105,7 @@ global
 				cpt <- cpt +1;
 				
 			} else if data[0,i] = "wall" { //Wall creatoion
-				create wall with:[locationX::data[1,i],locationY::data[2,i],length::data[3,i],width::data[4,i]];
+				create wall with:[type::data[1,i],locationX::data[2,i],locationY::data[3,i],length::data[4,i],width::data[5,i]];
 			} 
 		}
 		
@@ -140,22 +140,26 @@ global
 		//Rely on Ai and Bi
 		calculRange <- calculRange + pedSizeMin*2;
 		
-		//Add the simulation starting date at the begining of the output files names
-		list outPutFileNameDecompose <- outputFileName split_with '/';
-		string tmpFileName <- replace(replace(replace(string(#now)," ",""),":",""),"-","") + "_" + last(outPutFileNameDecompose) ;
-		remove last(outPutFileNameDecompose) from:outPutFileNameDecompose;
-		outputFileName <- "";
-		
-		
-		loop i over:outPutFileNameDecompose
+		if outputFileName != "null"
 		{
-			outputFileName <- outputFileName + i +"/";
+			//Add the simulation starting date at the begining of the output files names
+			list outPutFileNameDecompose <- outputFileName split_with '/';
+			string tmpFileName <- replace(replace(replace(string(#now)," ",""),":",""),"-","") + "_" + last(outPutFileNameDecompose) ;
+			remove last(outPutFileNameDecompose) from:outPutFileNameDecompose;
+			outputFileName <- "";
+			
+			
+			loop i over:outPutFileNameDecompose
+			{
+				outputFileName <- outputFileName + i +"/";
+			}
+			outputFileName <- outputFileName + tmpFileName;
+			
+			//Prepare the file in which the data out
+			outFileData <- "cycle,number of peoples,Average nervousness,number of nervous peoples,average speed,average speed in the goal direction";
+			save outFileData to:outputFileName +".csv" rewrite:true;
 		}
-		outputFileName <- outputFileName + tmpFileName;
-		
-		//Prepare the file in which the data out
-		outFileData <- "cycle,number of peoples,Average nervousness,number of nervous peoples,average speed,average speed in the goal direction";
-		save outFileData to:outputFileName +".csv" rewrite:true;	
+			
 	}
 	
 	
