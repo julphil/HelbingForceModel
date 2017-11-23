@@ -8,9 +8,13 @@
 model InteractionScheduler
 
 import "../Species/People/InteractionPeople.gaml"
+import "../Entity/Metrics.gaml"
+import "../Entity/Edge.gaml"
 
 global
 {
+	int id_simulation; //simulation's id in the database
+	
 	matrix data; //Data file to create the space 
 	
 	//Simulation survey
@@ -402,6 +406,25 @@ global
 	//Save data in files
 	action saveData
 	{
+		if cycle  mod ((1/deltaT) as int) = 0
+		{
+			create metrics number:1 with:[cycle::cycle,peopleNumber::nb_interactionPeople,avgNervousness::meanNervousness,nervousPeopleNumber::nbNervoussPeople,avgSpeed::averageSpeed,avgOrientedSpeed::(meanOrientedSpeed/deltaT),passingPeople::(peoplePass/(cycle-realStartCycle+1)/deltaT),exitingPeople::(peopleOut/(cycle-realStartCycle+1)/deltaT)];
+			
+			ask interactionPeople
+			{
+				create graphNode number:1 with:[agentNumero::int(self),coordX::location.x,coordY::location.y,innerNerv::self.innerNervousness,currentNervousness::self.lastNervousness,cycle::cycle] returns:n;
+				self.currentNode <- n[0];
+			}
+			
+			ask interactionPeople
+			{
+				loop p over:interaction
+				{
+					create graphEdge number:1 with:[in::self.currentNode,out::p.currentNode,cycle::cycle];
+				}
+			}
+		}
+		
 		if cycle  mod ((1/deltaT) as int) = 0 and outputFileName != "null"
 		{
 			outFileData <- "" + cycle;
@@ -444,7 +467,7 @@ global
 			;
 			
 			save maxData to:outputFileName + "_max.txt" type:text;
-					
+								
 		}
 		if cycle  mod intervalLength = 0 and outputFileName != "null"
 		{

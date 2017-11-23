@@ -8,6 +8,7 @@ model InteractionPeople
 
 import "PanicPeople.gaml"
 import "../../Parameter/InteractionParameter.gaml"
+import "../../Entity/Node.gaml"
 
 species interactionPeople parent:panicPeople
 {
@@ -16,6 +17,7 @@ species interactionPeople parent:panicPeople
 	float neighbourNervoussness; //Nervousness transmit by interacting neighbours
 	int nbNeighbour; 
 	float lastNervousness; //For the transmition, we always use the total nervousness (inner + neighbours) of the last instant, to avoid problème of order
+	float innerNervousness;
 	
 	list<int> nervousityDistributionMark; //Use to know the repartition of nervous people in the spce
  
@@ -24,6 +26,8 @@ species interactionPeople parent:panicPeople
  	
  	//Var use to know if the agent pass the strategic area : 0 if not, 2 if yes, and 1 to indicated that he pass but the global agent didn't count it yet 
  	int verifPassing <- 0;
+ 	
+ 	graphNode currentNode;
  	
 	init
 	{
@@ -256,6 +260,7 @@ species interactionPeople parent:panicPeople
 	action computeNervousnessEmpathy
 	{
 			if nbNeighbour > 0 {
+				innerNervousness <- nervousness;
 				nervousness <- (1-empathy)*nervousness + empathy*neighbourNervoussness;
 			}
 			
