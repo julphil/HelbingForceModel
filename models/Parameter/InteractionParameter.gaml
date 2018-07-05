@@ -22,5 +22,6 @@ global
 	
 	//If true, the interaction graph must be write in a file
 	bool graphOutput;
+
 }
 

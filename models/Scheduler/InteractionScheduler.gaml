@@ -10,6 +10,7 @@ model InteractionScheduler
 import "../Species/People/InteractionPeople.gaml"
 import "../Entity/Metrics.gaml"
 import "../Entity/Edge.gaml"
+import "../connectDB/ConnectDB.gaml"
 
 global
 {
@@ -61,6 +62,8 @@ global
 	//Agent creation
 	init
 	{	
+		create connection number:1 with:[id_configuration::1];
+		
 		//Reading data file
 		file dataFile <- csv_file(dataFileName,",");
 		data <- matrix(dataFile);
