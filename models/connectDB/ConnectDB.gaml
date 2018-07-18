@@ -26,16 +26,19 @@ species connection skills:[SQLSKILL] {
     list<map> walls;
     
     int id_configuration;
+    
+    int id_simulation;
                                         
     init {
     	connect <- testConnection(params:POSTGRES);
-    	
+
+
         //Parameter     
         list<list> t <-   list<list> (self select(params:POSTGRES, 
                          select:"SELECT name,commentaire,typeConfig,fluctuationType,deltaT,relaxationTime,isRespawn,isFluctuation,pedestrianSpeed,pedestrianMaxSpeed,pedestrianMaxSize,pedestrianMinSize,simulationDuration,temporalFieldIntervalLength,interactionType,is360,interactionAngle,interactionRange,isNervousnessTransmition,interactionParameter,spaceLength,spaceWidth,socialForceStrength,socialForceThreshold,socialForceVision,bodyContactStrength,bodyFrictionStrength,isNervousness 
 							FROM configuration NATURAL JOIN parameterset WHERE id_configuration = ?;"
 							, values:[id_configuration]));
-    	
+    	write connect;
     	
     	loop i from:0 to: length(t[0])-1 {
     		add t[0][i]::t[2][0][i] to: parameter;
@@ -85,7 +88,7 @@ species connection skills:[SQLSKILL] {
 									FROM includeobstacle NATURAL JOIN obstacle NATURAL JOIN wall WHERE id_configuration = ?;"
 							, values:[id_configuration]));
 							
-		write "\n";
+
     	loop i from:0 to: length(t[2])-1 {
     		map tmp;
 
@@ -96,7 +99,18 @@ species connection skills:[SQLSKILL] {
     		add tmp to: walls;
 
     	}
-			
+ 
+    	
+    	
+    	//INSERT Iin simulation
+		t <- list<list> (self select(params:POSTGRES, 
+                         select:"WITH row AS (
+							INSERT INTO simulation (id_configuration,date_depart) VALUES (?,'" + date("now") + "') RETURNING id_simulation )
+							SELECT id_simulation
+							FROM row;"
+							,values:[id_configuration]));	
+							
+		write t;
     	
     	
     }

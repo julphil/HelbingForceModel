@@ -18,6 +18,11 @@ global
 	
 	matrix data; //Data file to create the space 
 	
+	//Parameter from the database
+	map parameter;
+    list<map> agentset;
+    list<map> walls;
+	
 	//Simulation survey
 	//At each moment
 	int nb_interactionPeople <- number_of_people;
@@ -64,6 +69,61 @@ global
 	{	
 		create connection number:1 with:[id_configuration::1];
 		
+		ask connection {
+			myself.parameter <- self.parameter;
+			myself.agentset <- self.agentset;
+    		myself.walls <- self.walls;
+		}
+		
+		do initParameter;
+		
+		loop w over: walls {
+			create wall with:[type::"rectangle",locationX::float(w['COORDX']),locationY::float(w['COORDY']),length::float(w['LARGEUR']),width::float(w['LONGUEUR'])];
+		}
+		
+		int cpt <- 0;
+		write agentset;
+		loop aS over:agentset {
+			list<pair<point>> listAim;
+				loop o from:1 to:length(list(aS["ZONE"])) -1 {
+					add {aS["ZONE"][o]["COORDLTX"] as float,aS["ZONE"][o]["COORDLTY"] as float}::{aS["ZONE"][o]["COORDRDX"] as float,aS["ZONE"][o]["COORDRDY"] as float} to:listAim;
+				}
+				
+				//create one agent to start the simulation
+				create interactionPeople number:1 with:[init_color::aS["COLOR"],pointAX::float(aS["ZONE"][0]["COORDLTX"]),pointAY::float(aS["ZONE"][0]["COORDLTY"]),pointBX::float(aS["ZONE"][0]["COORDRDX"]),pointBY::float(aS["ZONE"][0]["COORDRDY"]),lAim::listAim];
+				
+				//Create a type of agent, use each time on agent spawn
+				add [aS["COLOR"],aS["PARAMGENERATION"],float(aS["ZONE"][0]["COORDLTX"]),float(aS["ZONE"][0]["COORDLTY"]),float(aS["ZONE"][0]["COORDRDX"]),float(aS["ZONE"][0]["COORDRDY"]),listAim]  to:typeAgent;
+				
+				//Poisson process
+				list<pair<int,int>> tempArrivalTimes;
+				int lastTime <- 0;
+				
+				if bool(aS["ISPOISSON"])
+				{
+					loop while:lastTime<simulationDuration
+					{
+						lastTime <- round(lastTime - 1/((aS["PARAMGENERATION"] as float) * deltaT)*ln(1-rnd(1.0)));
+						add lastTime::cpt to:tempArrivalTimes;
+						write "toto";
+					}
+				}
+				else
+				{
+					float nbCreate <- (aS["PARAMGENERATION"] as float);
+					
+					loop while:nbCreate >0.00001
+					{
+						add 0::cpt to:tempArrivalTimes;
+						nbCreate <- nbCreate -1;
+					}
+				}
+				ArrivalTimes <- ArrivalTimes + tempArrivalTimes;
+				
+				cpt <- cpt +1;
+		}
+		
+		/*
 		//Reading data file
 		file dataFile <- csv_file(dataFileName,",");
 		data <- matrix(dataFile);
@@ -111,14 +171,13 @@ global
 				
 				cpt <- cpt +1;
 				
-			} else if data[0,i] = "wall" { //Wall creatoion
-				create wall with:[type::data[1,i],locationX::data[2,i],locationY::data[3,i],length::data[4,i],width::data[5,i]];
-			} 
+			}
 		}
+		*/
 		
 		//We need to sort arrival times because in the case where we have different type of agents, arrival are set for each type one after another
 		ArrivalTimes <- ArrivalTimes sort_by each.key;
-		
+		write ArrivalTimes;
 		
 		number_of_people <- length(interactionPeople);
 		nb_interactionPeople <- length(interactionPeople);
@@ -362,6 +421,36 @@ global
 				nbNervoussPeople <- nbNervoussPeople + 1;
 			}
 		}
+	}
+	
+	
+	//Init parameter
+	action initParameter
+	{
+		fluctuationType <- parameter["FLUCTUATIONTYPE"];
+		deltaT <- float(parameter["DELTAT"]);
+		relaxation <- float(parameter["RELAXATIONTIME"]);
+		isRespawn <- bool(parameter["ISRESPAWN"]);
+		isFluctuation <- bool(parameter["ISFLUCTUATION"]);
+		pedDesiredSpeed <- float(parameter["PEDESTRIANSPEED"]);
+		pedMaxSpeed <- float(parameter["PEDESTRIANMAXSPEED"]);
+		pedSizeMax <- float(parameter["PEDESTRIANMAXSIZE"]);
+		pedSizeMin <- float(parameter["PEDESTRIANMINSIZE"]);
+		simulationDuration <- int(parameter["SIMULATIONDURATION"]);
+		intervalLength <- int(parameter["TEMPORALFIELDINTERVALLENGTH"]);
+		interactionType <- parameter["INTERACTIONTYPE"];
+		is360 <- bool(parameter["IS360"]);
+		angleInteraction <- float(parameter["INTERACTIONANGLE"]);
+		perceptionRange <- float(parameter["INTERACTIONRANGE"]);
+		isNervousnessTransmition <- bool(parameter["ISNERVOUSNESSTRANSMITION"]);
+		empathy <- float(parameter["INTERACTIONPARAMETER"]);
+		spaceLength <- int(parameter["SPACELENGTH"]);
+		spaceWidth <- int (parameter["SPACEWIDTH"]);
+		Ai <- float(parameter["SOCIALFORCESTRENGTH"]);
+		Bi <- float(parameter["SOCIALFORCETHRESHOLD"]);
+		lambda <- float(parameter["SOCIALFORCEVISION"]);
+		body <- float(parameter["BODYCONTACTSTRENGTH"]);
+		friction <- float(parameter["BODYFRICTIONSTRENGTH"]);
 	}
 	
 	//Spawn agents with the arrival time set on the initialisation
