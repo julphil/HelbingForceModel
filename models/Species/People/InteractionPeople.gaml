@@ -29,17 +29,38 @@ species interactionPeople parent:panicPeople
  	
  	graphNode currentNode;
  	
+ 	
+ 	bool isActive <- false;
+ 	int spawnTime;
+ 	
+ 	list<list> recordData;
+ 	
 	init
 	{
-		n_color <- d_color;
+		color <- #white;
 		
 		nervousityDistributionMark <- list_with(12,0);
+		
+		location <- {-1000,-10000};
+		
+	}
+
+	action activation {
+		if spawnTime = cycle {
+			isActive <- true;
+			n_color <- d_color;
+			location <- { rnd(pointAX,pointBX), rnd(pointAY,pointBY) };
+		}
+	}
+	
+	action record {
+		add [location.x,location.y,nervousness,isActive] to:recordData;
 	}
 
 	//Set contener variables empty
 	action resetStepValue
 	{
-		matDistances <- nil as_matrix({number_of_people,1});
+		matDistances <- nil as_matrix({nb_interactionPeople,1});
 		interaction <- [];
 	}
 	
@@ -48,17 +69,22 @@ species interactionPeople parent:panicPeople
 	{	
 		ask interactionPeople parallel:true 
 		{
-			if self != myself and int(self) < length(myself.matDistances)
-			{
-				if(matDistances[int(myself),0] != nil) //If the other agent has already done the calculus,  we take his result
+			if isActive {
+				if self != myself and int(self) < length(myself.matDistances)
 				{
-					myself.matDistances[int(self),0] <- matDistances[int(myself),0];
-				} else {
-					myself.matDistances[int(self),0] <-  norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+					if(matDistances[int(myself),0] != nil) //If the other agent has already done the calculus,  we take his result
+					{
+						myself.matDistances[int(self),0] <- matDistances[int(myself),0];
+					} else {
+						myself.matDistances[int(self),0] <-  norm({ myself.location.x - self.location.x, myself.location.y - self.location.y });
+					}
+				} else if int(self) > length(myself.matDistances) //The case is not suppose to happend, if it happend, it's a bug
+				{
+					//write location;
 				}
-			} else if int(self) > length(myself.matDistances) //The case is not suppose to happend, if it happend, it's a bug
+			} else
 			{
-				write location;
+				
 			}
 		}
 		
@@ -69,7 +95,7 @@ species interactionPeople parent:panicPeople
 	{
 		ask interactionPeople 
 		{
-			if self != myself
+			if isActive and self != myself
 			{
 				float distanceCenter <- matDistances[int(myself),0];	
 				float distance <- distanceCenter -(self.size+myself.size);
@@ -96,7 +122,7 @@ species interactionPeople parent:panicPeople
 		
 		ask interactionPeople parallel:true
 		{
-			if self != myself
+			if isActive and self != myself
 			{
 				
 				float distanceCenter <- matDistances[int(myself),0];
@@ -287,6 +313,46 @@ species interactionPeople parent:panicPeople
 				nervousityDistributionMark[i] <- 2;
 			}
 		}
+	}
+	
+	//Check if the agent is out. If it the case, dependant if respawn is actived or not, it delte the agent or replace it 
+	action sortie
+	{
+		if isRespawn 
+		{
+			
+			if location.x >= spaceLength and group = 1
+			{
+				location <- { 0, location.y};
+			} else if location.x <= 0 and group = 0
+			{
+				location <- { spaceLength, location.y};
+			}
+		}
+		else if ((location.x >= spaceLength) or (location.x <= 0)) and indexAim = length(lAim)-1
+		{
+			do unactivate;
+		}
+		
+		if location.y < 0 
+		{
+			location <- {location.x, 0.0};
+			presenceTime <- 0;
+			cumuledOrientedSpeed <- 0.0;
+		} else if location.y > spaceWidth 
+		{
+			location <- {location.x,spaceWidth};
+			presenceTime <- 0;
+			cumuledOrientedSpeed <- 0.0;
+		}
+
+	}
+	
+	action unactivate
+	{
+		isActive <- false;
+		location <- {-1000,-1000};
+		
 	}
 	
 	//The agent mark the cell (in the nervousnees field) he is on with his nervousness

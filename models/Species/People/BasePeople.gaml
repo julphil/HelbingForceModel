@@ -81,7 +81,6 @@ species basePeople
 			color <-init_color as rgb;
 		}
 		
-		spawnTime <-cycle;
 		do aim;
 		
 		actual_velocity <- {desired_speed * desired_direction.x,desired_speed * desired_direction.y};

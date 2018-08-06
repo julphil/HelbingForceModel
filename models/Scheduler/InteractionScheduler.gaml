@@ -25,7 +25,7 @@ global
 	
 	//Simulation survey
 	//At each moment
-	int nb_interactionPeople <- number_of_people;
+	
 	list<rgb> lcolor;
 	float meanNervousness;
 	float averageSpeed;
@@ -67,6 +67,8 @@ global
 	//Agent creation
 	init
 	{	
+		nb_interactionPeople <- number_of_people;
+		
 		create connection number:1 with:[id_configuration::1];
 		
 		ask connection {
@@ -82,7 +84,6 @@ global
 		}
 		
 		int cpt <- 0;
-		write agentset;
 		loop aS over:agentset {
 			list<pair<point>> listAim;
 				loop o from:1 to:length(list(aS["ZONE"])) -1 {
@@ -105,7 +106,6 @@ global
 					{
 						lastTime <- round(lastTime - 1/((aS["PARAMGENERATION"] as float) * deltaT)*ln(1-rnd(1.0)));
 						add lastTime::cpt to:tempArrivalTimes;
-						write "toto";
 					}
 				}
 				else
@@ -177,7 +177,7 @@ global
 		
 		//We need to sort arrival times because in the case where we have different type of agents, arrival are set for each type one after another
 		ArrivalTimes <- ArrivalTimes sort_by each.key;
-		write ArrivalTimes;
+		
 		
 		number_of_people <- length(interactionPeople);
 		nb_interactionPeople <- length(interactionPeople);
@@ -185,6 +185,12 @@ global
 		
 		nervousityDistribution <- list_with(12,0);
 		
+		
+		loop while:cptArrival<length(ArrivalTimes)
+		{
+			create interactionPeople number:1 with:[spawnTime::int(ArrivalTimes[cptArrival].key),init_color::typeAgent[ArrivalTimes[cptArrival].value][0],pointAX::typeAgent[ArrivalTimes[cptArrival].value][2],pointAY::typeAgent[ArrivalTimes[cptArrival].value][3],pointBX::typeAgent[ArrivalTimes[cptArrival].value][4],pointBY::typeAgent[ArrivalTimes[cptArrival].value][5],lAim::typeAgent[ArrivalTimes[cptArrival].value][6]];
+			cptArrival <- cptArrival + 1;
+		}
 		
 		
 		ask field
@@ -249,8 +255,16 @@ global
 		do spawn;
 		do count;
 
+		ask interactionPeople {
+			do record;
+		}
+
+		ask interactionPeople {
+			do activation;	
+		}
+		
 		//Clean some variables
-		ask interactionPeople{
+		ask interactionPeople {
 			do resetStepValue;
 		}
 		
@@ -267,23 +281,29 @@ global
 		//Compute the distantce between all agents
 		ask interactionPeople parallel:true
 		{
-			do computeDistance;
+			if isActive {
+				do computeDistance;	
+			}
 		}
 		
 		//For each agent we set his neighbourhood in the interacton network
 		ask interactionPeople parallel:true{
-			do setInteraction;
+			if isActive {
+				do setInteraction;	
+			}
 		}
 		
 		//Set the destination of the agent
 		ask interactionPeople parallel:true{
-			do aim;
+			if isActive {
+				do aim;
+			}
 		}
 		
 		//Count how many people have pass the strategic area
 		ask interactionPeople 
 		{
-			if checkPassing = 1
+			if ((isActive) and (checkPassing = 1))
 			{
 				myself.peoplePass <- myself.peoplePass + 1;
 				do checking;			
@@ -294,20 +314,23 @@ global
 		if realStartCycle = -1 and peoplePass > 0
 		{
 			realStartCycle <- cycle;
-			write realStartCycle; 
 		}
 		
 		
 	
 		//Compute the force system applying on every agent
 		ask interactionPeople parallel:true{
-			do computeForce;	
+			if isActive {
+				do computeForce;
+			}	
 		}
 		
 		//With the force system, compute velocity and mouvement
 		ask interactionPeople {
-			do computeVelocity;
-			do mouvement;
+			if isActive {
+				do computeVelocity;
+				do mouvement;
+			}
 		}
 		
 		//Compute the nervousness transmit by the neighborhood
@@ -318,8 +341,9 @@ global
 		//Compute the inner nervousness
 		ask interactionPeople parallel:true
 		{
-			do computeNervousness;
-			
+			if isActive {
+				do computeNervousness;
+			}
 		}
 		
 		//Compose finla nervousnnes with inner and neighborhood
@@ -327,8 +351,10 @@ global
 		{
 			ask interactionPeople parallel:true
 			{
-				do computeNervousnessEmpathy;
-				do setColor;
+				if isActive {
+					do computeNervousnessEmpathy;
+					do setColor;
+				}
 			}
 		}
 		
@@ -339,7 +365,9 @@ global
 		//Mark the field
 		ask interactionPeople
 		{
-			do cellMark;
+			if isActive {
+				do cellMark;	
+			}
 		}
 		
 		//Set color of each cells based on the nervousness
@@ -354,6 +382,13 @@ global
 		do saveData;
 		
 		do writeGraphDGS;
+		
+		
+		if cycle = simulationDuration {
+			do finalRecord;
+		} 	
+		
+		
 	}
 	
 	//If agents does not respawn, pause the simulation at the time they're  no more agent in the simulation
@@ -373,8 +408,10 @@ global
 		
 		ask interactionPeople
 		{
-			count <- count +1;
-			meanNervousness <- meanNervousness + nervousness;
+			if isActive {
+				count <- count +1;
+				meanNervousness <- meanNervousness + nervousness;
+			}
 		}
 		
 		if count != 0
@@ -388,8 +425,10 @@ global
 		
 		ask interactionPeople
 		{
-			count <- count +1;
-			averageSpeed <- averageSpeed+ norm(actual_velocity);
+			if isActive {
+				count <- count +1;
+				averageSpeed <- averageSpeed+ norm(actual_velocity);
+			}
 		}
 		
 		if count != 0
@@ -403,8 +442,10 @@ global
 		
 		ask interactionPeople
 		{
-			count <- count +1;
-			meanOrientedSpeed <- meanOrientedSpeed+ orientedSpeed;
+			if isActive {
+				count <- count +1;
+				meanOrientedSpeed <- meanOrientedSpeed+ orientedSpeed;
+			}
 		}
 		
 		if count != 0
@@ -417,7 +458,7 @@ global
 		
 		ask interactionPeople
 		{
-			if(nervousness >= 0.5) {
+			if(isActive and nervousness >= 0.5) {
 				nbNervoussPeople <- nbNervoussPeople + 1;
 			}
 		}
@@ -458,7 +499,6 @@ global
 	{
 		loop while:cptArrival<length(ArrivalTimes) and ArrivalTimes[cptArrival].key <= cycle
 		{
-			create interactionPeople number:1 with:[init_color::typeAgent[ArrivalTimes[cptArrival].value][0],pointAX::typeAgent[ArrivalTimes[cptArrival].value][2],pointAY::typeAgent[ArrivalTimes[cptArrival].value][3],pointBX::typeAgent[ArrivalTimes[cptArrival].value][4],pointBY::typeAgent[ArrivalTimes[cptArrival].value][5],lAim::typeAgent[ArrivalTimes[cptArrival].value][6]];
 			number_of_people <- number_of_people + 1;
 			cptArrival <- cptArrival + 1;
 		}
@@ -495,6 +535,14 @@ global
 		}
 	}
 	
+	action finalRecord
+	{
+		ask connection
+		{
+			do recordAgent;
+		}
+	}
+	
 	//Save data in files
 	action saveData
 	{
@@ -504,15 +552,19 @@ global
 			
 			ask interactionPeople
 			{
-				create graphNode number:1 with:[agentNumero::int(self),coordX::location.x,coordY::location.y,innerNerv::self.innerNervousness,currentNervousness::self.lastNervousness,cycle::cycle] returns:n;
-				self.currentNode <- n[0];
+				if isActive {
+					create graphNode number:1 with:[agentNumero::int(self),coordX::location.x,coordY::location.y,innerNerv::self.innerNervousness,currentNervousness::self.lastNervousness,cycle::cycle] returns:n;
+					self.currentNode <- n[0];
+				}
 			}
 			
 			ask interactionPeople
 			{
-				loop p over:interaction
-				{
-					create graphEdge number:1 with:[in::self.currentNode,out::p.currentNode,cycle::cycle];
+				if isActive {
+					loop p over:interaction
+					{
+						create graphEdge number:1 with:[in::self.currentNode,out::p.currentNode,cycle::cycle];
+					}
 				}
 			}
 		}
@@ -578,11 +630,13 @@ global
 			
 			ask interactionPeople
 			{
-				outFileData <- outFileData + "\nan " + int(self) + " x:" + self.location.x + " y:" + self.location.y + " innerNerv:" + self.nervousness + " lastNerv:" + self.lastNervousness + " currentNerv:" + self.nervousness;
-				
-				loop p over:interaction
-				{
-					outEdge <- outEdge + "\nae " + int(self) + "to" + int(p) + " " + int(self) + " < " + int(p) + " nervpass:" + p.lastNervousness;
+				if isActive {
+					outFileData <- outFileData + "\nan " + int(self) + " x:" + self.location.x + " y:" + self.location.y + " innerNerv:" + self.nervousness + " lastNerv:" + self.lastNervousness + " currentNerv:" + self.nervousness;
+					
+					loop p over:interaction
+					{
+						outEdge <- outEdge + "\nae " + int(self) + "to" + int(p) + " " + int(self) + " < " + int(p) + " nervpass:" + p.lastNervousness;
+					}
 				}
 				 
 			} 

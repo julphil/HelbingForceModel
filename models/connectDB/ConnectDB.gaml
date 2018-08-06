@@ -7,6 +7,8 @@
 
 model ConnectDB
 
+import "../Species/People/InteractionPeople.gaml"
+
 species connection skills:[SQLSKILL] {
 	
 	bool connect;
@@ -38,7 +40,7 @@ species connection skills:[SQLSKILL] {
                          select:"SELECT name,commentaire,typeConfig,fluctuationType,deltaT,relaxationTime,isRespawn,isFluctuation,pedestrianSpeed,pedestrianMaxSpeed,pedestrianMaxSize,pedestrianMinSize,simulationDuration,temporalFieldIntervalLength,interactionType,is360,interactionAngle,interactionRange,isNervousnessTransmition,interactionParameter,spaceLength,spaceWidth,socialForceStrength,socialForceThreshold,socialForceVision,bodyContactStrength,bodyFrictionStrength,isNervousness 
 							FROM configuration NATURAL JOIN parameterset WHERE id_configuration = ?;"
 							, values:[id_configuration]));
-    	write connect;
+    	
     	
     	loop i from:0 to: length(t[0])-1 {
     		add t[0][i]::t[2][0][i] to: parameter;
@@ -99,19 +101,70 @@ species connection skills:[SQLSKILL] {
     		add tmp to: walls;
 
     	}
- 
+		
     	
     	
+    }
+    
+    action recordAgent 
+    {
     	//INSERT Iin simulation
-		t <- list<list> (self select(params:POSTGRES, 
+		list<list> t <- list<list> (self select(params:POSTGRES, 
                          select:"WITH row AS (
 							INSERT INTO simulation (id_configuration,date_depart) VALUES (?,'" + date("now") + "') RETURNING id_simulation )
 							SELECT id_simulation
 							FROM row;"
 							,values:[id_configuration]));	
+		
 							
-		write t;
     	
+    	
+    	string valueInsert <- "INSERT INTO Agent (size,coorspawnax,coorspawnay,coorspawnbx,coorspawnby,spawntime,id_simulation,states)\nVALUES\n";
+    	list<string> agentRecord;
+    	
+    	ask interactionPeople
+    	{
+
+    		string record <- "(" + size + "," + pointAX + "," + pointAY + "," + pointBX + "," + pointBY + "," + spawnTime + "," + t[2][0][0] + ",";
+    		record <- record + "'{"; 
+    		
+    		loop i from:0 to:length(recordData)-2
+    		{
+    			record <- record + "{";
+    			loop j from:0 to:length(recordData[i])-2
+    			{
+
+    				record <- record + float(recordData[i][j]);
+    				record <- record + ","; 
+    			}
+    			record <- record + float(recordData[i][length(recordData[i])-1]);
+    			
+    			record <- record + "},"; 
+    		}
+    		record <- record + "{";
+    		
+    		loop j from:0 to:length(recordData[length(recordData)-1])-2
+    			{
+    				record <- record + float(recordData[length(recordData)- 1][j]);
+    				record <- record + ","; 
+    			}
+    			record <- record + float(recordData[length(recordData)- 1][length(recordData[length(recordData)- 1])-1]);	
+    		record <- record + "}"; 
+    		
+    		
+    		record <- record + "}'"; 
+    		record <- record + ")"; 
+    		add record to: agentRecord;
+    		
+    		
+    	}
+    	
+    	int l <- length(agentRecord);
+    	loop i from:0 to:l-2
+    	{
+    		valueInsert <- valueInsert + agentRecord[i] + ",\n";
+    	}
+    	valueInsert <- valueInsert + agentRecord[l-1] + ";";
     	
     }
 }

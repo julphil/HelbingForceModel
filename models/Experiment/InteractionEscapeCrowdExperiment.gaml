@@ -23,7 +23,7 @@ experiment helbingPanicSimulation type: gui
 	parameter 'Pedestrian minimun size (radius)' var:pedSizeMin category:"Simulation parameter" unit:"m" slider:false;
 	parameter 'Pedestrian maximum size (radius)' var:pedSizeMax category:"Simulation parameter" unit:"m" slider:false;
 	parameter "Display force" var:arrow category:"Simulation parameter" init:false;
-	parameter "Simulation duration" var:simulationDuration category:"Simulation parameter" init: 30000 unit:"cycle";
+	parameter "Simulation duration" var:simulationDuration category:"Simulation parameter" init: 100 unit:"cycle";
 	parameter "Temporal Interval Lengrh" var:intervalLength category:"Simulation parameter" init:1000 unit:"cycle" min:1;
 	
 	parameter 'Interaction choice' var: interactionType among:["Mean","Maximum","BiasedFortuneWheel","Closest"] init:"Mean" category:"Interaction parameter" ;
@@ -78,7 +78,7 @@ experiment helbingPanicSimulation type: gui
 			
 		}
 		
-		display SocialForceModel_nervousnness
+		/*display SocialForceModel_nervousnness
 		{
 			chart "global nervoussness" {
 				data "global nervoussness" value: meanNervousness;
@@ -98,7 +98,7 @@ experiment helbingPanicSimulation type: gui
 			chart "Number of nervous people" {
 				data "Number of nervous people" value: nbNervoussPeople;
 			}
-		}
+		}*/
 		
 		monitor "Nb interactionPeople" value:nb_interactionPeople;
 		monitor "Leaving time" value:lastCycle*deltaT;
