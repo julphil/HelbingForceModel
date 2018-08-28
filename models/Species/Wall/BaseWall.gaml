@@ -7,7 +7,7 @@
 
 model BaseWall
 
-import "../../Parameter/BaseParameter.gaml"
+import "../../Parameter/InteractionParameter.gaml"
 
 species wall schedules: []
 {

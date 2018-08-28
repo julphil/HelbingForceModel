@@ -6,12 +6,66 @@
 
 model InteractionPeople
 
-import "PanicPeople.gaml"
+import "../Wall/BaseWall.gaml"
 import "../../Parameter/InteractionParameter.gaml"
-import "../../Entity/Node.gaml"
 
-species interactionPeople parent:panicPeople
+species interactionPeople
 {
+	//////////////////////BASE PEOPLE
+	string init_color;
+	rgb color;
+	
+	float size;
+	int group;
+	float mass min:1.0 max:120.0 <- 80.0;
+	
+	//Creation location
+	float pointAX;
+	float pointAY;
+	float pointBX;
+	float pointBY;
+
+	// Destination
+	list<pair<point>> lAim;
+	int indexAim <- 0;
+	geometry aimZone;
+	point aim;
+	point desired_direction;
+	float desired_speed;
+	point actual_velocity <- { 0.0, 0, 0 };
+	float max_velocity;
+    
+    //Use to compute the average speed
+    float lastDistanceToAim;
+    float orientedSpeed;
+    float cumuledOrientedSpeed;
+    list<float> lOrientedSpeed;
+    int presenceTime <- 0;
+    int spawnTime;
+    
+    //Goal attraction force
+	point goal_attraction_force <- {0.0,0.0};
+
+	//Compute forces
+	point people_forces <- {0.0,0.0};
+	point wall_forces <- {0.0,0.0};
+	
+	//Distance withall other agent
+	matrix matDistances;
+	
+	int checkPassing <- 0;
+	
+	//////////////////////PANIC PEOPLE
+	float nervousness <- 0.0;
+	
+	//Fluctuations
+    point normal_fluctuation;
+    point maximum_fluctuation;
+    
+	point fluctuation_forces <- {0.0,0.0};
+ 
+ 
+	//////////////////////INTERACTION PEOPLE
 	rgb d_color;
 	rgb n_color;
 	float neighbourNervoussness; //Nervousness transmit by interacting neighbours
@@ -26,17 +80,57 @@ species interactionPeople parent:panicPeople
  	
  	//Var use to know if the agent pass the strategic area : 0 if not, 2 if yes, and 1 to indicated that he pass but the global agent didn't count it yet 
  	int verifPassing <- 0;
- 	
- 	graphNode currentNode;
- 	
+
  	
  	bool isActive <- false;
- 	int spawnTime;
  	
  	list<list> recordData;
+ 	list<list> recordNetwork;
  	
 	init
 	{
+		/////////////////////BASE PEOPLE
+		self.size <- rnd(pedSizeMin,pedSizeMax);
+		self.desired_speed <- pedDesiredSpeed;
+		max_velocity <- 1.3 * desired_speed;
+		
+		shape <- circle(size);
+			
+		location <- { rnd(pointAX,pointBX), rnd(pointAY,pointBY) };
+		if (number_of_people > 1)
+		{
+			loop while:( agent_closest_to(self).location distance_to self.location < size*2){
+				location <- { rnd(pointAX,pointBX), rnd(pointAY,pointBY) };
+			}
+		}
+		
+		aimZone <- polygon([lAim[indexAim].key as point,{(lAim[indexAim].key as point).x,lAim[indexAim].value.y},lAim[indexAim].value,{lAim[indexAim].value.x,(lAim[indexAim].key as point).y}]);
+		
+		if init_color = "rnd"
+		{	
+			color <- rnd_color(255);
+		}
+		else
+		{
+			color <-init_color as rgb;
+		}
+		
+		do aim;
+		
+		actual_velocity <- {desired_speed * desired_direction.x,desired_speed * desired_direction.y};
+		
+		
+		//////////////////////PANIC PEOPLE
+		//Initilasation of the noise
+		normal_fluctuation <- { gauss(0,0.01),gauss(0,0.01)};
+		maximum_fluctuation <- {0,0};
+              
+		loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+		{
+	   		maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};    
+		}
+		
+		//////////////////////INTERACTION PEOPLE
 		color <- #white;
 		
 		nervousityDistributionMark <- list_with(12,0);
@@ -45,23 +139,29 @@ species interactionPeople parent:panicPeople
 		
 	}
 
-	action activation {
-		if spawnTime = cycle {
-			isActive <- true;
-			n_color <- d_color;
-			location <- { rnd(pointAX,pointBX), rnd(pointAY,pointBY) };
-		}
-	}
-	
-	action record {
-		add [location.x,location.y,nervousness,isActive] to:recordData;
-	}
 
-	//Set contener variables empty
-	action resetStepValue
+
+	//Choose the destination point
+	action aim
 	{
-		matDistances <- nil as_matrix({nb_interactionPeople,1});
-		interaction <- [];
+		if location.x>(lAim[indexAim].key as point).x and location.x<lAim[indexAim].value.x and location.y>(lAim[indexAim].key as point).y and location.y<lAim[indexAim].value.y
+		{
+			indexAim <- indexAim+1;
+			if indexAim >= length(lAim)
+			{
+				nbPeopleOut <- nbPeopleOut +1;
+				do die;
+			}
+			
+			aimZone <- polygon([lAim[indexAim].key as point,{(lAim[indexAim].key as point).x,lAim[indexAim].value.y},lAim[indexAim].value,{lAim[indexAim].value.x,(lAim[indexAim].key as point).y}]);
+		}
+		
+		aim <-  closest_points_with(location,aimZone)[1];
+		
+		//update the goal direction
+		float norme <- sqrt((aim.x - location.x) * (aim.x - location.x) + (aim.y - location.y) * (aim.y - location.y));
+		desired_direction <- { (aim.x - location.x) / (norme + epsilon), (aim.y - location.y) / (norme + epsilon) };
+				
 	}
 	
 	//Calculate all distance between this agent and all other agents
@@ -90,27 +190,15 @@ species interactionPeople parent:panicPeople
 		
 	}
 	
-	//Determine which other agents are in the range of interaction, all agents in the range is add to a list 
-	action setInteraction
+	//Force functions
+	action computeForce
 	{
-		ask interactionPeople 
-		{
-			if isActive and self != myself
-			{
-				float distanceCenter <- matDistances[int(myself),0];	
-				float distance <- distanceCenter -(self.size+myself.size);
-				point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
-				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
-				
-				if ((perceptionRange < 0.0 or float(matDistances[int(myself),0]) < perceptionRange) and (is360 or (acos(phiij) < angleInteraction and acos(phiij) > -angleInteraction) or acos(phiij) > 360-angleInteraction) )
-					{
-						add self to: myself.interaction;
-					}
-			}
-		}
+		//Compute forces
+		do  people_repulsion_force_function;
+		do wall_repulsion_force_function;
+		do fluctuation_term_function;
 	}
 
-	//Force functions
 	//Social repulsion force + physical interaction force
 	action people_repulsion_force_function
 	{
@@ -176,6 +264,161 @@ species interactionPeople parent:panicPeople
 		
 		people_forces <- {social_repulsion_force.x+physical_repulsion_force.x + physical_tangencial_force.x,social_repulsion_force.y+physical_repulsion_force.y + physical_tangencial_force.y};
 	}
+
+	//Wall dodge  force + physical interaction force
+	action wall_repulsion_force_function 
+	{
+		wall_forces <- { 0.0, 0.0 };
+		ask wall parallel:true
+		{
+			if (self != myself)
+			{
+				point wallClosestPoint <- closest_points_with(myself.location ,self.shape.contour)[1];
+				float distance <- norm({ myself.location.x - wallClosestPoint.x, myself.location.y - wallClosestPoint.y })-myself.size;
+				
+				point nij <- { (myself.location.x - wallClosestPoint.x) / (distance+myself.size+epsilon), (myself.location.y - wallClosestPoint.y) / (distance+myself.size+epsilon)};
+				
+				
+				float theta;
+				
+				if (distance <= 0.0 or myself.location overlaps self or self overlaps myself.location) { //if there is a contact
+					theta <- -distance;
+
+					if(distance <= 0.0 and (myself.location overlaps self or self overlaps myself.location))
+					{
+						nij <- {-nij.x,-nij.y};
+					}
+				}
+				else {
+					theta <- 0.0;
+				}
+				
+				
+				point tij <- {-nij.y,nij.x};
+				
+				
+				float deltaVitesseTangencielle <- 
+					(myself.actual_velocity.x)*tij.x + (myself.actual_velocity.y)*tij.y;
+				
+				myself.wall_forces <- {
+					myself.wall_forces.x + ((Ai * exp(-distance / Bi)+body*theta) * nij.x - friction * theta * deltaVitesseTangencielle * tij.x), 
+					myself.wall_forces.y + ((Ai * exp(-distance / Bi)+body*theta) * nij.y - friction * theta * deltaVitesseTangencielle * tij.y)
+				};
+
+			}
+		}
+	}
+	
+	//Noise in the movement of the pedestrian, rely on nervousness level
+	action fluctuation_term_function
+	   {
+			if !isFluctuation {return {0.0,0.0};}
+			if (fluctuationType = "Vector")
+			{
+				//The noise is independant of the deltaT, otherwise more the deltaT is little, more the noise is negligent (close to its mean, 0)
+				if(cycle mod (1/deltaT) <= 0.001)
+				{
+		
+					normal_fluctuation <- { gauss(0,1.0),gauss(0,1.0)};
+					maximum_fluctuation <- {0,0};
+					loop while:(norm(maximum_fluctuation) < norm(normal_fluctuation))
+					{
+						maximum_fluctuation <- { gauss(0,desired_speed*2.6),gauss(0,desired_speed*2.6)};
+					}
+				}
+				
+				fluctuation_forces <- {(1.0-nervousness)*normal_fluctuation.x + nervousness*maximum_fluctuation.x,(1.0-nervousness)*normal_fluctuation.y + nervousness*maximum_fluctuation.y};
+			}
+			else if (fluctuationType = "Speed")
+			{
+				desired_speed <- (1-nervousness)*pedDesiredSpeed + nervousness*pedMaxSpeed;
+				fluctuation_forces <- {0.0,0.0};
+			}
+			   		   	
+			
+	   } 
+	
+	//Calculation of the force and moveent of the agent
+	action computeVelocity
+	{	
+		//Save the current distance to the aim before any move
+		lastDistanceToAim <- self.location distance_to aim;
+
+		//Goal attraction force
+		goal_attraction_force <- { (desired_speed * desired_direction.x - actual_velocity.x) / relaxation, (desired_speed * desired_direction.y - actual_velocity.y) / relaxation };
+
+		// Sum of the forces
+		point force_sum <- {
+		goal_attraction_force.x  + people_forces.x/mass + wall_forces.x/mass, goal_attraction_force.y + people_forces.y/mass + wall_forces.y/mass
+		};
+			
+		
+		
+		actual_velocity <- { actual_velocity.x + force_sum.x*deltaT, actual_velocity.y + force_sum.y*deltaT };
+		float norm_actual_velocity <- norm(actual_velocity);
+		max_velocity <- 1.3 * desired_speed;
+		if(norm_actual_velocity>max_velocity )
+		{
+			actual_velocity <- {actual_velocity.x*max_velocity/norm_actual_velocity,actual_velocity.y*max_velocity/norm_actual_velocity};
+		}
+
+	}
+
+	action mouvement
+	{
+		//Movement
+		location <- { location.x + actual_velocity.x*deltaT, location.y + actual_velocity.y*deltaT };
+	}	
+
+	action computeNervousness
+	{	
+		orientedSpeed <- (lastDistanceToAim - (self.location distance_to aim));
+		
+		
+		if cycle-spawnTime > round(relaxation/deltaT)
+		{
+			if cycle-spawnTime < 10+relaxation/deltaT
+			{
+				presenceTime <- cycle-spawnTime -relaxation/deltaT as int;
+			}
+			else
+			{
+				 remove first(lOrientedSpeed) from: lOrientedSpeed;
+				 presenceTime <- 10;
+			}
+			add orientedSpeed to:lOrientedSpeed;
+			
+			float sum <- 0.0;
+			loop i over:lOrientedSpeed {
+				sum <- sum + i;
+			}
+			//Calculate the current nervousness
+			nervousness <- 1-((sum/(presenceTime+epsilon))/(pedDesiredSpeed/*desired_speed*/*deltaT));
+		if nervousness < 0.0 {nervousness <-0.0;} else if nervousness > 1.0 {nervousness <- 1.0;} 
+		}
+	}
+	
+	
+	//Determine which other agents are in the range of interaction, all agents in the range is add to a list 
+	action setInteraction
+	{
+		ask interactionPeople 
+		{
+			if isActive and self != myself
+			{
+				float distanceCenter <- matDistances[int(myself),0];	
+				float distance <- distanceCenter -(self.size+myself.size);
+				point nij <- { (myself.location.x - self.location.x) / (distanceCenter+epsilon), (myself.location.y - self.location.y) / (distanceCenter+epsilon) };
+				float phiij <- -nij.x * desired_direction.x + -nij.y * desired_direction.y;
+				
+				if ((perceptionRange < 0.0 or float(matDistances[int(myself),0]) < perceptionRange) and (is360 or (acos(phiij) < angleInteraction and acos(phiij) > -angleInteraction) or acos(phiij) > 360-angleInteraction) )
+					{
+						add self to: myself.interaction;
+					}
+			}
+		}
+	}
+
 	
 	//Compute the nervousness neighbours transmit to the agent
 	action spreadNervousness
@@ -276,12 +519,6 @@ species interactionPeople parent:panicPeople
 		}
 }
 	
-	//Set the color of the agent based on nervousness value
-	action setColor
-	{
-		color <- rgb(255*nervousness,255-255*nervousness,0.0);
-	}
-	
 	//Set the total value of nervousness with a compromise between the agent inner nervousness and his neighbours's blanced with a empathy coefficient
 	action computeNervousnessEmpathy
 	{
@@ -293,26 +530,16 @@ species interactionPeople parent:panicPeople
 		lastNervousness <- nervousness;
 	}
 	
-	action nervousnessMark
+	//Set contener variables empty
+	action resetStepValue
 	{
-		if nervousness > 0.5 and location.x>=0
-		{	
-			int index <- int(location.x/5);
-			
-			if index < length(nervousityDistributionMark) and nervousityDistributionMark[index] = 0
-			{
-				nervousityDistributionMark[index] <- 1;
-			}
-		}
+		matDistances <- nil as_matrix({nb_interactionPeople,1});
+		interaction <- [];
 	}
 	
-	action validMark
+	action checking
 	{
-		loop i from: 0 to: length(nervousityDistributionMark)-1{
-			if nervousityDistributionMark[i] = 1 {
-				nervousityDistributionMark[i] <- 2;
-			}
-		}
+		checkPassing <- 2;
 	}
 	
 	//Check if the agent is out. If it the case, dependant if respawn is actived or not, it delte the agent or replace it 
@@ -354,12 +581,76 @@ species interactionPeople parent:panicPeople
 		location <- {-1000,-1000};
 		
 	}
+
+	
+	action activation {
+		if spawnTime = cycle {
+			isActive <- true;
+			n_color <- d_color;
+			location <- { rnd(pointAX,pointBX), rnd(pointAY,pointBY) };
+		}
+	}
+	
+	action record {
+		
+		list temp;
+		
+		loop n over: interaction {
+			add int(n) to:temp;
+		}
+		
+		add temp to:recordNetwork;
+		
+		add [location.x,location.y,nervousness,isActive] to:recordData;
+	}
 	
 	//The agent mark the cell (in the nervousnees field) he is on with his nervousness
 	action cellMark {
 		ask field[(self.location.x) as int,(self.location.y) as int]
 		{
 			do addAgent(myself);
+		}
+	}
+	
+	action nervousnessMark
+	{
+		if nervousness > 0.5 and location.x>=0
+		{	
+			int index <- int(location.x/5);
+			
+			if index < length(nervousityDistributionMark) and nervousityDistributionMark[index] = 0
+			{
+				nervousityDistributionMark[index] <- 1;
+			}
+		}
+	}
+	
+	action validMark
+	{
+		loop i from: 0 to: length(nervousityDistributionMark)-1{
+			if nervousityDistributionMark[i] = 1 {
+				nervousityDistributionMark[i] <- 2;
+			}
+		}
+	}
+	
+	//Set the color of the agent based on nervousness value
+	action setColor
+	{
+		color <- rgb(255*nervousness,255-255*nervousness,0.0);
+	}
+	
+	aspect default
+	{
+		
+
+		draw circle(size) color: color;
+		if arrow{
+			draw line([{location.x+ desired_direction.x,location.y + desired_direction.y},{location.x,location.y}]) color: #blue begin_arrow:0.1;
+//			draw line([{location.x+ goal_attraction_force.x*deltaT,location.y + goal_attraction_force.y*deltaT},{location.x,location.y}]) color: #pink begin_arrow:0.1;
+////			draw line([{location.x+ people_forces.x*deltaT/mass,location.y + people_forces.y*deltaT/mass},{location.x,location.y}]) color: #purple begin_arrow:0.1;
+			draw line([{location.x+ wall_forces.x*deltaT,location.y + wall_forces.y*deltaT},{location.x,location.y}]) color: #orange begin_arrow:0.1;
+//			draw line([{location.x+ actual_velocity.x,location.y + actual_velocity.y},{location.x,location.y}]) color: #red begin_arrow:0.1;
 		}
 	}
 	
@@ -384,6 +675,24 @@ species interactionPeople parent:panicPeople
 	}
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////GRID///////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+
 
 //This grid represent the nervousness field, it allows us to survey nervousness propagation 
 grid field width:spaceLength height:spaceWidth {

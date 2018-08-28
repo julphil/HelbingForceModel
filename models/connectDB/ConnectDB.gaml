@@ -116,16 +116,15 @@ species connection skills:[SQLSKILL] {
 							FROM row;"
 							,values:[id_configuration]));	
 		
-							
+		id_simulation <- int(t[2][0][0]);
     	
     	
-    	string valueInsert <- "INSERT INTO Agent (size,coorspawnax,coorspawnay,coorspawnbx,coorspawnby,spawntime,id_simulation,states)\nVALUES\n";
+    	string valueInsert <- "INSERT INTO Agent (sim_id,size,coorspawnax,coorspawnay,coorspawnbx,coorspawnby,spawntime,id_simulation,states)\nVALUES\n";
     	list<string> agentRecord;
     	
     	ask interactionPeople
     	{
-
-    		string record <- "(" + size + "," + pointAX + "," + pointAY + "," + pointBX + "," + pointBY + "," + spawnTime + "," + t[2][0][0] + ",";
+    		string record <- "(" + int(self) + "," + size + "," + pointAX + "," + pointAY + "," + pointBX + "," + pointBY + "," + spawnTime + "," + myself.id_simulation + ",";
     		record <- record + "'{"; 
     		
     		loop i from:0 to:length(recordData)-2
@@ -153,18 +152,72 @@ species connection skills:[SQLSKILL] {
     		
     		
     		record <- record + "}'"; 
+
+    		
     		record <- record + ")"; 
     		add record to: agentRecord;
     		
     		
     	}
     	
+    	
+    	
     	int l <- length(agentRecord);
     	loop i from:0 to:l-2
     	{
     		valueInsert <- valueInsert + agentRecord[i] + ",\n";
     	}
-    	valueInsert <- valueInsert + agentRecord[l-1] + ";";
+    	
+    	
+    	valueInsert <- valueInsert + agentRecord[l-1];
+    	
+    	t <- list<list> (self select(params:POSTGRES, 
+                         select:"WITH row AS (" + valueInsert +" RETURNING id_agent )
+							SELECT id_agent
+							FROM row;"
+							));	
+							
+		valueInsert <- "INSERT INTO Interactions (id_simulation,cycle,sim_id_agent_seeing,sim_id_agent_seen)\nVALUES\n";
+		list<string> interactionRecord;
+		
+		ask interactionPeople
+		{
+			loop i from:0 to:length(recordNetwork)-1
+			{
+				if(length(recordNetwork[i]) > 0)
+				{
+					loop j from:0 to:length(recordNetwork[i])-1
+					{
+						add "(" + myself.id_simulation + "," + i + "," + int(self) + "," + recordNetwork[i][j] + ")" to:interactionRecord;
+						
+					}
+				}
+			}
+		}
+		
+		if length(interactionRecord) > 0
+		{
+			if length(interactionRecord) > 1
+			{
+				loop i from:0 to:length(interactionRecord)-2
+				{
+					valueInsert <- valueInsert + interactionRecord[i] + ",\n";
+				}
+			}
+		
+				valueInsert <- valueInsert + interactionRecord[length(interactionRecord)-1] + "\n";
+			
+			
+			write "WITH row AS (" + valueInsert +" RETURNING id_interaction )
+								SELECT id_interaction
+								FROM row;";
+			
+			t <- list<list> (self select(params:POSTGRES, 
+	                         select:"WITH row AS (" + valueInsert +" RETURNING id_interaction )
+								SELECT id_interaction
+								FROM row;"
+								));	
+		}
     	
     }
 }

@@ -8,8 +8,6 @@
 model InteractionScheduler
 
 import "../Species/People/InteractionPeople.gaml"
-import "../Entity/Metrics.gaml"
-import "../Entity/Edge.gaml"
 import "../connectDB/ConnectDB.gaml"
 
 global
@@ -256,10 +254,6 @@ global
 		do count;
 
 		ask interactionPeople {
-			do record;
-		}
-
-		ask interactionPeople {
 			do activation;	
 		}
 		
@@ -383,6 +377,9 @@ global
 		
 		do writeGraphDGS;
 		
+		ask interactionPeople {
+			do record;
+		}
 		
 		if cycle = simulationDuration {
 			do finalRecord;
@@ -546,28 +543,6 @@ global
 	//Save data in files
 	action saveData
 	{
-		if cycle  mod ((1/deltaT) as int) = 0
-		{
-			create metrics number:1 with:[cycle::cycle,peopleNumber::nb_interactionPeople,avgNervousness::meanNervousness,nervousPeopleNumber::nbNervoussPeople,avgSpeed::averageSpeed,avgOrientedSpeed::(meanOrientedSpeed/deltaT),passingPeople::(peoplePass/(cycle-realStartCycle+1)/deltaT),exitingPeople::(peopleOut/(cycle-realStartCycle+1)/deltaT)];
-			
-			ask interactionPeople
-			{
-				if isActive {
-					create graphNode number:1 with:[agentNumero::int(self),coordX::location.x,coordY::location.y,innerNerv::self.innerNervousness,currentNervousness::self.lastNervousness,cycle::cycle] returns:n;
-					self.currentNode <- n[0];
-				}
-			}
-			
-			ask interactionPeople
-			{
-				if isActive {
-					loop p over:interaction
-					{
-						create graphEdge number:1 with:[in::self.currentNode,out::p.currentNode,cycle::cycle];
-					}
-				}
-			}
-		}
 		
 		if cycle  mod ((1/deltaT) as int) = 0 and outputFileName != "null"
 		{
