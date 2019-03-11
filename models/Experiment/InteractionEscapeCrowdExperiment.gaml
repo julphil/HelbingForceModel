@@ -10,39 +10,8 @@ import "../Scheduler/InteractionScheduler.gaml"
 
 experiment helbingPanicSimulation type: gui
 {
-	parameter 'Data file' var:dataFileName category:"Simulation parameter" init:"null";
-	parameter 'Output file' var:outputFileName category:"Simulation parameter" init:"null";
-	parameter 'Graph Output' var: graphOutput category:"Simulation parameter" init:false;
-	parameter 'Fluctuation type' var: fluctuationType among:["Speed","Vector"] init:"Speed" category:"Simulation parameter" ;
-	parameter 'Delta T' var: deltaT category:"Simulation parameter" slider:false unit:"Second" init: 0.01;
-	parameter 'Relaxation time' var: relaxation category:"Simulation parameter" unit:"Second" slider:false;
-	parameter 'Respawn' var: isRespawn category:"Simulation parameter" init:false slider:false;
-	parameter 'Fluctuation' var: isFluctuation category:"Simulation parameter" init:true;
-	parameter 'Pedestrian speed' var: pedDesiredSpeed category:"Simulation parameter" unit:"m.s-1" slider:false;
-	parameter 'Pedestrian maximum speed' var: pedMaxSpeed category:"Simulation parameter" unit:"m.s-1" slider:false init:6.0;
-	parameter 'Pedestrian minimun size (radius)' var:pedSizeMin category:"Simulation parameter" unit:"m" slider:false;
-	parameter 'Pedestrian maximum size (radius)' var:pedSizeMax category:"Simulation parameter" unit:"m" slider:false;
-	parameter "Display force" var:arrow category:"Simulation parameter" init:false;
-	parameter "Simulation duration" var:simulationDuration category:"Simulation parameter" init: 100 unit:"cycle";
-	parameter "Temporal Interval Lengrh" var:intervalLength category:"Simulation parameter" init:1000 unit:"cycle" min:1;
-	
-	parameter 'Interaction choice' var: interactionType among:["Mean","Maximum","BiasedFortuneWheel","Closest"] init:"Mean" category:"Interaction parameter" ;
-	parameter 'Has a 360° perception' var:is360 init:true category:"Interaction parameter" ;
-	parameter "Interaction angle" var:angleInteraction init:40.0 max:360.0 min:0.0 category:"Interaction parameter"; 
-	parameter 'Perception range' var:perceptionRange init:2.0 category:"Interaction parameter" slider:false;
-	parameter 'Nervousness transmition' var:isNervousnessTransmition init:true category:"Interaction parameter";
-	parameter 'Empathy' var:empathy init:0.5 category:"Interaction parameter";
-	
-	parameter 'Passing zone index' var:indexPassing init:1 category:"Simlation parameter";
-	
-	parameter 'Space length' var: spaceLength category:"Space par ameter" unit:"Meter";
-	parameter 'Space width' var: spaceWidth category:"Space parameter" unit:"Meter";
-	
-	parameter 'Interaction strength' var: Ai category:"Forces parameter" unit:"Newton";
-	parameter 'Range of the repulsive interactions' var: Bi category:"Forces parameter" unit:"Meter";
-	parameter 'Peception' var: lambda category:"Forces parameter" slider:false;
-	parameter 'Body contact strength' var: body category:"Forces parameter" unit:"kg.s-2";
-	parameter 'Body friction' var: friction category:"Forces parameter" unit:"kg.m-1.s-1";
+	parameter 'Configuration id' var: id_configuration init:15 ;
+	parameter 'Simulation set id' var: id_simulationset init:2 ;
 	
 	output
 	{
@@ -107,61 +76,11 @@ experiment helbingPanicSimulation type: gui
 
 }
 
-//One agent, not  a real simulation, but usefull to debug
-experiment helbingPanicSimulation_uniqueAgent type: gui parent:helbingPanicSimulation
+experiment MAIN_EXPERIMENT_corridorExit parent:helbingPanicSimulation
 {
-	parameter 'Data file' init:"../Experiment/DataFiles/singleAgent.csv";
-	
-	parameter 'Pedestrian number' var: number_of_people init:1;
-	parameter 'Space length' var: spaceLength init:10;
-	parameter 'Space width' var: spaceWidth init:10;
-}
-
-//On group trying to pass a bottle neck
-experiment helbingPanicSimulation_bottleneck_1group type: gui parent:helbingPanicSimulation
-{
-	parameter 'Data file' init:"../Experiment/DataFiles/oneRoomOneExit.csv";
-	
-	parameter 'Respawn' var: isRespawn init:false;
-	parameter 'Space width' var: spaceWidth init:15;
-	
-	output
-	{
-		display SocialForceModel_graph
-		{
-			species interactionPeople aspect:graph;
-		}
-	}
-}
-
-experiment smallWorld type: gui parent:helbingPanicSimulation
-{
-	parameter 'Data file' init:"../Experiment/DataFiles/smallWorld.csv";
-	
-	parameter 'Space length' var: spaceLength init:10;
-	parameter 'Space width' var: spaceWidth init:10;
-	
-	output
-	{
-		display SocialForceModel_graph
-		{
-			species interactionPeople aspect:graph;
-		}
-	}
-}
-
-experiment helbingRoom parent:helbingPanicSimulation
-{
-	parameter 'Data file' init:"../Experiment/DataFiles/roomsAndCorridor.csv";
-	parameter 'Space length' var: spaceLength init:35;
-	parameter 'Space width' var: spaceWidth init:19;
-}
-
-experiment corridorExit parent:helbingPanicSimulation
-{
-	parameter 'Data file' init:"../Experiment/DataFiles/corridorExit5/lambda3/corridorExit_1m.csv";
 	parameter 'Space length' var: spaceLength init:60;
 	parameter 'Space width' var: spaceWidth init:7;
+	parameter 'Demonstration mode (not registering)' var:demonstrationMode init:true;
 
 	
 	output
@@ -196,5 +115,4 @@ experiment corridorExit parent:helbingPanicSimulation
 		
 		
 }
-
 

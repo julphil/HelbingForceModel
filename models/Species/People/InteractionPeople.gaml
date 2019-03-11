@@ -83,9 +83,14 @@ species interactionPeople
 
  	
  	bool isActive <- false;
+ 	bool wasActive  <- false;
  	
  	list<list> recordData;
+ 	list<float> recordDataTemp;
+ 	
  	list<list> recordNetwork;
+ 	
+ 	int cptRecord <- 0;
  	
 	init
 	{
@@ -137,6 +142,8 @@ species interactionPeople
 		
 		location <- {-1000,-10000};
 		
+		recordDataTemp <- [0.0,0.0,0.0,0.0,0.0];
+		
 	}
 
 
@@ -147,6 +154,11 @@ species interactionPeople
 		if location.x>(lAim[indexAim].key as point).x and location.x<lAim[indexAim].value.x and location.y>(lAim[indexAim].key as point).y and location.y<lAim[indexAim].value.y
 		{
 			indexAim <- indexAim+1;
+			if checkPassing = 0 and indexAim > indexPassing
+			{
+				checkPassing <- 1;	
+			}
+			
 			if indexAim >= length(lAim)
 			{
 				nbPeopleOut <- nbPeopleOut +1;
@@ -523,8 +535,9 @@ species interactionPeople
 	action computeNervousnessEmpathy
 	{
 			if nbNeighbour > 0 {
+				int isThresholdPass <-int(neighbourNervoussness >= threshold);
 				innerNervousness <- nervousness;
-				nervousness <- (1-empathy)*nervousness + empathy*neighbourNervoussness;
+				nervousness <- (1-empathy*isThresholdPass)*nervousness + empathy*neighbourNervoussness*isThresholdPass;
 			}
 			
 		lastNervousness <- nervousness;
@@ -586,6 +599,7 @@ species interactionPeople
 	action activation {
 		if spawnTime = cycle {
 			isActive <- true;
+			wasActive <- true;
 			n_color <- d_color;
 			location <- { rnd(pointAX,pointBX), rnd(pointAY,pointBY) };
 		}
@@ -593,15 +607,36 @@ species interactionPeople
 	
 	action record {
 		
-		list temp;
+		/*list temp;
 		
 		loop n over: interaction {
 			add int(n) to:temp;
 		}
 		
-		add temp to:recordNetwork;
-		
-		add [location.x,location.y,nervousness,isActive] to:recordData;
+		add temp to:recordNetwork;*/
+		/*if (cycle mod int(1/deltaT) = 0)
+		{
+			if isActive and cptRecord > 0
+			{
+				add [isActive,recordDataTemp[0]/cptRecord,recordDataTemp[1]/cptRecord,recordDataTemp[2]/cptRecord,recordDataTemp[3]/cptRecord,recordDataTemp[4]/cptRecord] to:recordData;
+			}
+			else
+			{
+				add [isActive,0.1,0.0,0.0,0.0,0.0] to:recordData;
+			}
+			
+			recordDataTemp <- [0.0,0.0,0.0,0.0,0.0];
+			cptRecord <- 0;
+		}
+		else
+		{
+			if isActive
+			{
+				recordDataTemp <- [(recordDataTemp[0] + location.x),recordDataTemp[1] +location.y,recordDataTemp[2] +nervousness, recordDataTemp[3] +desired_direction.x,recordDataTemp[4] +desired_direction.y];
+				cptRecord <- cptRecord + 1;
+			}
+		}*/
+		add [isActive,location.x,location.y,nervousness,desired_direction.x,desired_direction.y] to:recordData;
 	}
 	
 	//The agent mark the cell (in the nervousnees field) he is on with his nervousness
@@ -690,7 +725,7 @@ species interactionPeople
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////GRID///////////////////////////////////////////
+///////////////////////////////////////////GRID/////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 

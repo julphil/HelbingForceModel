@@ -9,6 +9,11 @@ model InteractionParameter
 
 global
 {
+	bool demonstrationMode; 
+	
+	int id_configuration;
+	int id_simulationset;
+	
 	//machine error
 	float epsilon <- 0.0000001;
 	
@@ -48,6 +53,7 @@ global
 	bool isNervousnessTransmition;
 	float empathy <- 0.0;
 	float angleInteraction;
+	float threshold <- 0.0;
 	
 	//////////pedestrian caracteristics
 	float pedSizeMin <- 0.25;

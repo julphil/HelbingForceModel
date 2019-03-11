@@ -67,7 +67,7 @@ global
 	{	
 		nb_interactionPeople <- number_of_people;
 		
-		create connection number:1 with:[id_configuration::1];
+		create connection number:1 with:[id_configuration::id_configuration];
 		
 		ask connection {
 			myself.parameter <- self.parameter;
@@ -121,57 +121,6 @@ global
 				cpt <- cpt +1;
 		}
 		
-		/*
-		//Reading data file
-		file dataFile <- csv_file(dataFileName,",");
-		data <- matrix(dataFile);
-		
-		int cpt <- 0;
-		//Each row is an item (a wall or a set of agents)
-		loop i from:0 to:data.rows-1
-		{
-			if data[0,i] = "agent" {
-				//Set the aim area
-				list<pair<point>> listAim;
-				loop index from:7  to:data.columns-4 step:4 {
-					add {data[index,i] as float,data[index+1,i] as float}::{data[index+2,i] as float,data[index+3,i] as float} to:listAim;
-				}
-				
-				//create one agent to start the simulation
-				create interactionPeople number:1 with:[init_color::data[1,i],pointAX::data[3,i],pointAY::data[4,i],pointBX::data[5,i],pointBY::data[6,i],lAim::listAim];
-				
-				//Create a type of agent, use each time on agent spawn
-				add [data[1,i],data[2,i],data[3,i],data[4,i],data[5,i],data[6,i],listAim]  to:typeAgent;
-				
-				//Poisson process
-				list<pair<int,int>> tempArrivalTimes;
-				int lastTime <- 0;
-				
-				if (data[2,i] as float) > 0.0
-				{
-					loop while:lastTime<simulationDuration
-					{
-						lastTime <- round(lastTime - 1/((data[2,i] as float) * deltaT)*ln(1-rnd(1.0)));
-						add lastTime::cpt to:tempArrivalTimes;
-					}
-				}
-				else
-				{
-					float nbCreate <- (data[2,i] as float)*-1;
-					
-					loop while:nbCreate >0.00001
-					{
-						add 0::cpt to:tempArrivalTimes;
-						nbCreate <- nbCreate -1;
-					}
-				}
-				ArrivalTimes <- ArrivalTimes + tempArrivalTimes;
-				
-				cpt <- cpt +1;
-				
-			}
-		}
-		*/
 		
 		//We need to sort arrival times because in the case where we have different type of agents, arrival are set for each type one after another
 		ArrivalTimes <- ArrivalTimes sort_by each.key;
@@ -210,26 +159,16 @@ global
 		//Rely on Ai and Bi
 		calculRange <- calculRange + pedSizeMin*2;
 		
-		if outputFileName != "null"
+		
+		
+		if !demonstrationMode
 		{
-			//Add the simulation starting date at the begining of the output files names
-			list outPutFileNameDecompose <- outputFileName split_with '/';
-			string tmpFileName <- replace(replace(replace(string(#now)," ",""),":",""),"-","") + "_" + last(outPutFileNameDecompose) ;
-			remove last(outPutFileNameDecompose) from:outPutFileNameDecompose;
-			outputFileName <- "";
-			
-			
-			loop i over:outPutFileNameDecompose
+			ask connection
 			{
-				outputFileName <- outputFileName + i +"/";
+				do initTable;
+				myself.id_simulation <- self.id_simulation;
 			}
-			outputFileName <- outputFileName + tmpFileName;
-			
-			//Prepare the file in which the data out
-			outFileData <- "cycle,number of peoples,Average nervousness,number of nervous peoples,average speed,average speed in the goal direction";
-			save outFileData to:outputFileName +".csv" rewrite:true;
-		}
-			
+		}	
 	}
 	
 	
@@ -249,6 +188,11 @@ global
 	//Scheduler of action the simulation perform at each step
 	reflex scheduler
 	{	
+		if (cycle mod 1000 = 0)
+		{
+			write cycle;
+		}
+		
 		//First we generate the agent for whom it's the arrival time
 		do spawn;
 		do count;
@@ -308,6 +252,13 @@ global
 		if realStartCycle = -1 and peoplePass > 0
 		{
 			realStartCycle <- cycle;
+			if !demonstrationMode
+			{
+				ask connection
+				{
+					do insertRealStartTime(myself.realStartCycle);
+				}
+			}
 		}
 		
 		
@@ -347,10 +298,16 @@ global
 			{
 				if isActive {
 					do computeNervousnessEmpathy;
-					do setColor;
 				}
 			}
 		}
+		
+		ask interactionPeople parallel:true
+			{
+				if isActive {
+					do setColor;
+				}
+			}
 		
 		ask field parallel:true {
 			do reset;
@@ -373,17 +330,24 @@ global
 		
 		do computeAverage;
 		
-		do saveData;
-		
-		do writeGraphDGS;
-		
 		ask interactionPeople {
 			do record;
 		}
 		
 		if cycle = simulationDuration {
 			do finalRecord;
+			//write(""+ id_simulation + " is over at :" + date("now"));
+			do halt ;
+			do pause;
 		} 	
+		
+		if !demonstrationMode and  cycle mod 200 = 0 and cycle > 0
+		{
+			ask connection
+			{
+				do recordAgentState;
+			}
+		}
 		
 		
 	}
@@ -489,6 +453,7 @@ global
 		lambda <- float(parameter["SOCIALFORCEVISION"]);
 		body <- float(parameter["BODYCONTACTSTRENGTH"]);
 		friction <- float(parameter["BODYFRICTIONSTRENGTH"]);
+		threshold <- float(parameter['THRESHOLD']);
 	}
 	
 	//Spawn agents with the arrival time set on the initialisation
@@ -534,90 +499,12 @@ global
 	
 	action finalRecord
 	{
-		ask connection
+		if !demonstrationMode
 		{
-			do recordAgent;
-		}
-	}
-	
-	//Save data in files
-	action saveData
-	{
-		
-		if cycle  mod ((1/deltaT) as int) = 0 and outputFileName != "null"
-		{
-			outFileData <- "" + cycle;
-			outFileData <- outFileData + "," + nb_interactionPeople;
-			outFileData <- outFileData + "," + meanNervousness;
-			outFileData <- outFileData + "," + nbNervoussPeople;
-			outFileData <- outFileData + "," + averageSpeed;
-			outFileData <- outFileData + "," + meanOrientedSpeed/deltaT;
-			outFileData <- outFileData + "," + peopleOut;
-			outFileData <- outFileData + "," + peoplePass;
-			
-			save outFileData to:outputFileName +".csv" rewrite:false;
-			
-			if realStartCycle > -1
+			ask connection
 			{
-				outFileData <- "";
-				outFileData <- outFileData + "" + nb_interactionPeopleAVG/(cycle-realStartCycle+1);
-				outFileData <- outFileData + "," + meanNervousnessAVG/(cycle-realStartCycle+1);
-				outFileData <- outFileData + "," + nbNervoussPeopleAVG/(cycle-realStartCycle+1);
-				outFileData <- outFileData + "," + averageSpeedAVG/(cycle-realStartCycle+1);
-				outFileData <- outFileData + "," + meanOrientedSpeedAVG/(cycle-realStartCycle+1)/deltaT;
-				outFileData <- outFileData + "," + peopleOut/(cycle-realStartCycle+1)/deltaT;
-				outFileData <- outFileData + "," + peoplePass/(cycle-realStartCycle+1)/deltaT;
-				
-				save outFileData to:outputFileName +"_average.csv" rewrite:true;
-			}
-		
-			
-			string maxData <- 
-			"Number of people succeding escape : " + nbPeopleOut + "\n" +
-			"Maximum number of nervous people : " + maxNervousPeople.value + " at cycle " + maxNervousPeople.key + "\n" +
-			"Maximum nervousness reach : " + maxNervousness.value + " at cycle " + maxNervousness.key + "\n" +
-			"Maximum number of people in the space at the same time : " + maxPeopleIn.value +  "at cycle " + maxPeopleIn.key +  "\n" +
-			"Maximum  average speed reach : " + maxSpeed.value.key + " at cycle " + maxSpeed.key +  " when at the same time the oriented speed is " + maxSpeed.value.value + "\n" +
-			"Maximum oriented speed reach : " + maxOrientedSpeed.value.key + " at cycle " + maxOrientedSpeed.key +  " when at the same time the speed is " + maxOrientedSpeed.value.value + "\n" +
-			"Larger difference between speed and oriented speed : " +  maxSpeedDifference.value + " at the cycle " + maxSpeedDifference.key  + "\n" + 
-			nbPeopleOut + "," + maxNervousPeople.value + "," + maxNervousness.value + "," + maxPeopleIn.value + "," + maxSpeed.value.key + "," + maxOrientedSpeed.value.key + "," + maxSpeedDifference.value +"\n" +
-			"\nAverage nervousness map :\n\n" + nervousnessMap + "\n" +
-			"\nCumuled nervousness map :\n\n" + cumuledNervousnessMap
-			;
-			
-			save maxData to:outputFileName + "_max.txt" type:text;
-								
-		}
-		if cycle  mod intervalLength = 0 and outputFileName != "null"
-		{
-			string writeData <- "" + temporalNervousnessMap + "\n";
-			
-			save writeData to:outputFileName + "_temporal.txt" rewrite:false type:text;
-		}
-	}
-	
-	action writeGraphDGS
-	{
-		if cycle  mod ((1/deltaT) as int) = 0 and graphOutput
-		{
-			outFileData <- "\nst :" + int(cycle*deltaT) + "\ncl";
-			string outEdge <- "\n";
-			
-			ask interactionPeople
-			{
-				if isActive {
-					outFileData <- outFileData + "\nan " + int(self) + " x:" + self.location.x + " y:" + self.location.y + " innerNerv:" + self.nervousness + " lastNerv:" + self.lastNervousness + " currentNerv:" + self.nervousness;
-					
-					loop p over:interaction
-					{
-						outEdge <- outEdge + "\nae " + int(self) + "to" + int(p) + " " + int(self) + " < " + int(p) + " nervpass:" + p.lastNervousness;
-					}
-				}
-				 
-			} 
-			
-			save outFileData+outEdge to:outputFileName +"_graph.dgs" rewrite:false;
-			
+				do finalRecord;
+			}	
 		}
 	}
 }
